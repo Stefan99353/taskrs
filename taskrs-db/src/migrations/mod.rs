@@ -1,4 +1,6 @@
+mod create_users;
 use async_trait::async_trait;
+use create_users::CreateUsersMigration;
 use sea_orm::prelude::*;
 use sea_orm::{
     ActiveValue, ConnectionTrait, DbBackend, ExecResult, Schema, Statement, TransactionError,
@@ -12,7 +14,7 @@ pub struct Migrations {
 impl Migrations {
     pub fn new(target: Option<String>) -> Self {
         Self {
-            migrations: vec![],
+            migrations: vec![Box::new(CreateUsersMigration)],
             _target: target,
         }
     }
