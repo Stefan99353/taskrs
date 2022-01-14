@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["sqlite", "mysql", "posgres", "runtime-tokio-rustls"]
+default = ["sqlite", "mysql", "posgres", "runtime-tokio-rustls", "db-timestamps"]
 debug-sql = ["sea-orm/debug-print"]
 sqlite = ["sea-orm/sqlx-sqlite"]
 mysql = ["sea-orm/sqlx-mysql"]
 posgres = ["sea-orm/sqlx-postgres"]
+db-timestamps = []
 # Runtimes
 runtime-async-std-native-tls = ["sea-orm/runtime-async-std-native-tls"]
 runtime-async-std-rustls = ["sea-orm/runtime-async-std-rustls"]
@@ -20,7 +21,10 @@ runtime-tokio-rustls = ["sea-orm/runtime-tokio-rustls"]
 [dependencies]
 async-trait = "0.1.52"
 chrono = { version = "0.4.19", features = ["serde"] }
-serde = { version = "1.0.132", features = ["derive"] }
+futures = "0.3.19"
+rand = "0.8.4"
+rust-argon2 = "1.0.0"
+serde = { version = "1.0.133", features = ["derive"] }
 tracing = "0.1.29"
 
 [dependencies.sea-orm]

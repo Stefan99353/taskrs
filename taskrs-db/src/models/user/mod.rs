@@ -1,7 +1,8 @@
-use sea_orm::entity::prelude::*;
-use sea_orm::ActiveValue;
+pub mod dtos;
 
-#[derive(Clone, Debug, DeriveModel, DeriveActiveModel)]
+use sea_orm::entity::prelude::*;
+
+#[derive(Clone, Debug, Default, DeriveModel, DeriveActiveModel)]
 pub struct Model {
     pub id: i32,
     pub email: String,
@@ -65,12 +66,18 @@ impl PrimaryKeyTrait for PrimaryKey {
 }
 
 impl ActiveModelBehavior for ActiveModel {
+    #[cfg(feature = "db-timestamps")]
     fn before_save(mut self, insert: bool) -> Result<Self, DbErr> {
         let timestamp = chrono::Utc::now().naive_utc();
-        self.updated_at = ActiveValue::Set(Some(timestamp));
 
-        if insert {
-            self.inserted_at = ActiveValue::Set(Some(timestamp));
+        // Inserted timestamp
+        if let (&sea_orm::ActiveValue::NotSet, true) = (&self.inserted_at, insert) {
+            self.inserted_at = sea_orm::ActiveValue::Set(Some(timestamp));
+        }
+
+        // Updated timestamp
+        if let sea_orm::ActiveValue::NotSet = self.updated_at {
+            self.updated_at = sea_orm::ActiveValue::Set(Some(timestamp));
         }
 
         Ok(self)
