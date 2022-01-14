@@ -1,17 +1,19 @@
 use crate::actions::errors::AlterUserError;
 use crate::models::user;
 use crate::models::user::dtos::{User, UserCreate, UserUpdate};
+use crate::sea_query::IntoCondition;
 use futures::try_join;
 use sea_orm::prelude::*;
-use sea_orm::{Condition, IntoSimpleExpr, Order, QueryOrder};
+use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
 
 /// Gets all users from database
-pub async fn get_all<C>(
-    condition: Option<Condition>,
+pub async fn get_all<F, C>(
+    condition: Option<F>,
     order: Option<Vec<(Order, C)>>,
     db: &DbConn,
 ) -> Result<Vec<User>, DbErr>
 where
+    F: IntoCondition,
     C: IntoSimpleExpr,
 {
     let mut query = user::Entity::find();
@@ -33,14 +35,15 @@ where
 }
 
 /// Gets all users from database in a paginated form
-pub async fn get_paginated<C>(
+pub async fn get_paginated<F, C>(
     page: usize,
     limit: usize,
-    condition: Option<Condition>,
+    condition: Option<F>,
     order: Option<Vec<(Order, C)>>,
     db: &DbConn,
 ) -> Result<(Vec<User>, usize), DbErr>
 where
+    F: IntoCondition,
     C: IntoSimpleExpr,
 {
     let mut query = user::Entity::find();
@@ -62,12 +65,13 @@ where
 }
 
 /// Gets a single user from the database using an ID and/or a condition
-pub async fn get<C>(
+pub async fn get<F, C>(
     id: Option<i32>,
-    condition: Option<Condition>,
+    condition: Option<F>,
     db: &DbConn,
 ) -> Result<Option<User>, DbErr>
 where
+    F: IntoCondition,
     C: IntoSimpleExpr,
 {
     let mut query = if let Some(id) = id {
@@ -92,7 +96,7 @@ pub async fn check_email_exists(email: &str, db: &DbConn) -> Result<bool, DbErr>
         .map(|user| user.is_some())
 }
 
-/// Creates a new User and checks if the email is unique
+/// Creates a new user and checks if the email is unique
 pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserError> {
     let exists = check_email_exists(&user.email, db)
         .await
@@ -109,7 +113,7 @@ pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserErro
         .map_err(AlterUserError::Db)
 }
 
-/// Updates a User and checks if the email is unique
+/// Updates a user and checks if the email is unique
 pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserError> {
     if let Some(email) = &user.email {
         let exists = check_email_exists(email, db)
@@ -128,4 +132,20 @@ pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserErro
         .map_err(AlterUserError::Db)
 }
 
-pub async fn delete() {}
+/// Deletes a user
+pub async fn delete<F>(id: Option<i32>, condition: Option<F>, db: &DbConn) -> Result<u64, DbErr>
+where
+    F: IntoCondition,
+{
+    let mut query = if let Some(id) = id {
+        user::Entity::delete_many().filter(user::Column::Id.eq(id))
+    } else {
+        user::Entity::delete_many()
+    };
+
+    if let Some(condition) = condition {
+        query = query.filter(condition);
+    }
+
+    query.exec(db).await.map(|res| res.rows_affected)
+}
