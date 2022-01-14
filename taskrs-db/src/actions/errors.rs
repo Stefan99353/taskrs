@@ -1,4 +1,4 @@
-use std::fmt::{Formatter};
+use std::fmt::Formatter;
 
 /// Error typed returned from actions that create/alter a user.
 ///
