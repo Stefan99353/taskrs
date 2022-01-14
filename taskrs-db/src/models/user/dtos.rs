@@ -1,4 +1,3 @@
-use crate::models::user::Model;
 use chrono::NaiveDateTime;
 use sea_orm::ActiveValue;
 use serde::{Deserialize, Serialize};
@@ -15,8 +14,8 @@ pub struct User {
     pub updated_at: Option<NaiveDateTime>,
 }
 
-impl From<Model> for User {
-    fn from(model: Model) -> Self {
+impl From<crate::models::user::Model> for User {
+    fn from(model: crate::models::user::Model) -> Self {
         Self {
             id: model.id,
             email: model.email,
@@ -37,11 +36,11 @@ pub struct UserCreate {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub enabled: bool,
-    pub inserted_at: Option<chrono::NaiveDateTime>,
-    pub updated_at: Option<chrono::NaiveDateTime>,
+    pub inserted_at: Option<NaiveDateTime>,
+    pub updated_at: Option<NaiveDateTime>,
 }
 
-impl TryFrom<UserCreate> for super::ActiveModel {
+impl TryFrom<UserCreate> for crate::models::user::ActiveModel {
     type Error = argon2::Error;
 
     fn try_from(dto: UserCreate) -> Result<Self, Self::Error> {
@@ -76,11 +75,11 @@ pub struct UserUpdate {
     pub first_name: Option<Option<String>>,
     pub last_name: Option<Option<String>>,
     pub enabled: Option<bool>,
-    pub inserted_at: Option<Option<chrono::NaiveDateTime>>,
-    pub updated_at: Option<Option<chrono::NaiveDateTime>>,
+    pub inserted_at: Option<Option<NaiveDateTime>>,
+    pub updated_at: Option<Option<NaiveDateTime>>,
 }
 
-impl TryFrom<UserUpdate> for super::ActiveModel {
+impl TryFrom<UserUpdate> for crate::models::user::ActiveModel {
     type Error = argon2::Error;
 
     fn try_from(dto: UserUpdate) -> Result<Self, Self::Error> {
