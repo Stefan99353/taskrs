@@ -5,11 +5,10 @@ use sea_orm::entity::prelude::*;
 #[derive(Clone, Debug, Default, DeriveModel, DeriveActiveModel)]
 pub struct Model {
     pub id: i32,
-    pub email: String,
-    pub password_hash: String,
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub enabled: bool,
+    pub user_id: i32,
+    pub token: String,
+    pub iat: i64,
+    pub exp: i64,
     pub inserted_at: Option<DateTime>,
     pub updated_at: Option<DateTime>,
 }
@@ -19,18 +18,17 @@ pub struct Entity;
 
 impl EntityName for Entity {
     fn table_name(&self) -> &str {
-        "users"
+        "refresh_tokens"
     }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
 pub enum Column {
     Id,
-    Email,
-    PasswordHash,
-    FirstName,
-    LastName,
-    Enabled,
+    UserId,
+    Token,
+    Iat,
+    Exp,
     InsertedAt,
     UpdatedAt,
 }
@@ -41,11 +39,10 @@ impl ColumnTrait for Column {
     fn def(&self) -> ColumnDef {
         match self {
             Self::Id => ColumnType::Integer.def(),
-            Self::Email => ColumnType::String(Some(256)).def().unique(),
-            Self::PasswordHash => ColumnType::String(Some(1024)).def(),
-            Self::FirstName => ColumnType::String(Some(256)).def().nullable(),
-            Self::LastName => ColumnType::String(Some(256)).def().nullable(),
-            Self::Enabled => ColumnType::Boolean.def(),
+            Self::UserId => ColumnType::Integer.def(),
+            Self::Token => ColumnType::String(None).def(),
+            Self::Iat => ColumnType::BigInteger.def(),
+            Self::Exp => ColumnType::BigInteger.def(),
             Self::InsertedAt => ColumnType::DateTime.def(),
             Self::UpdatedAt => ColumnType::DateTime.def(),
         }
@@ -86,19 +83,24 @@ impl ActiveModelBehavior for ActiveModel {
 
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
-    RefreshToken,
+    User,
 }
 
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
-            Self::RefreshToken => Entity::has_many(super::refresh_token::Entity).into(),
+            Self::User => Entity::belongs_to(super::user::Entity)
+                .from(Column::UserId)
+                .to(super::user::Column::Id)
+                .on_update(ForeignKeyAction::Cascade)
+                .on_delete(ForeignKeyAction::Cascade)
+                .into(),
         }
     }
 }
 
-impl Related<super::refresh_token::Entity> for Entity {
+impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::RefreshToken.def()
+        Relation::User.def()
     }
 }
