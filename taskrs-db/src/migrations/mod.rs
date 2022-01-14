@@ -1,5 +1,8 @@
+mod create_refresh_tokens;
 mod create_users;
+
 use async_trait::async_trait;
+use create_refresh_tokens::CreateRefreshTokensMigration;
 use create_users::CreateUsersMigration;
 use sea_orm::prelude::*;
 use sea_orm::{
@@ -14,7 +17,10 @@ pub struct Migrations {
 impl Migrations {
     pub fn new(target: Option<String>) -> Self {
         Self {
-            migrations: vec![Box::new(CreateUsersMigration)],
+            migrations: vec![
+                Box::new(CreateUsersMigration),
+                Box::new(CreateRefreshTokensMigration),
+            ],
             _target: target,
         }
     }
