@@ -76,13 +76,13 @@ impl RelationTrait for Relation {
         match self {
             Relation::User => Entity::belongs_to(crate::models::user::Entity)
                 .from(Column::UserId)
-                .to(super::user::Column::Id)
+                .to(crate::models::user::Column::Id)
                 .on_update(ForeignKeyAction::Cascade)
                 .on_delete(ForeignKeyAction::Cascade)
                 .into(),
             Relation::Permission => Entity::belongs_to(crate::models::permission::Entity)
                 .from(Column::PermissionId)
-                .to(super::permission::Column::Id)
+                .to(crate::models::permission::Column::Id)
                 .on_update(ForeignKeyAction::Cascade)
                 .on_delete(ForeignKeyAction::Cascade)
                 .into(),
