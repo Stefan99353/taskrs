@@ -1,7 +1,6 @@
 pub mod dtos;
 
 use sea_orm::entity::prelude::*;
-use crate::sea_query::ColumnRef::Column;
 
 #[derive(Clone, Debug, Default, DeriveModel, DeriveActiveModel)]
 pub struct Model {
