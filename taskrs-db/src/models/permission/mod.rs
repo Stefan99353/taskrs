@@ -78,6 +78,25 @@ impl ActiveModelBehavior for ActiveModel {
     }
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+#[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
+    User,
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Self::User => Entity::has_many(crate::models::user::Entity).into(),
+        }
+    }
+}
+
+impl Related<crate::models::user::Entity> for Entity {
+    fn to() -> RelationDef {
+        crate::models::user_permission::Relation::User.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(crate::models::user_permission::Relation::Permission.def().rev())
+    }
 }

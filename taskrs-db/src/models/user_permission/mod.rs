@@ -1,6 +1,7 @@
 pub mod dtos;
 
 use sea_orm::entity::prelude::*;
+use crate::sea_query::ColumnRef::Column;
 
 #[derive(Clone, Debug, Default, DeriveModel, DeriveActiveModel)]
 pub struct Model {
@@ -65,6 +66,39 @@ impl ActiveModelBehavior for ActiveModel {
     }
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+#[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
+    User,
+    Permission,
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Relation::User => Entity::belongs_to(crate::models::user::Entity)
+                .from(Column::UserId)
+                .to(super::user::Column::Id)
+                .on_update(ForeignKeyAction::Cascade)
+                .on_delete(ForeignKeyAction::Cascade)
+                .into(),
+            Relation::Permission => Entity::belongs_to(crate::models::permission::Entity)
+                .from(Column::PermissionId)
+                .to(super::permission::Column::Id)
+                .on_update(ForeignKeyAction::Cascade)
+                .on_delete(ForeignKeyAction::Cascade)
+                .into(),
+        }
+    }
+}
+
+impl Related<crate::models::user::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::User.def()
+    }
+}
+
+impl Related<crate::models::permission::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Permission.def()
+    }
 }
