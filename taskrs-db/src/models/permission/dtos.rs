@@ -40,8 +40,8 @@ impl From<PermissionCreate> for crate::models::permission::ActiveModel {
     fn from(dto: PermissionCreate) -> Self {
         let mut active_model = Self {
             name: ActiveValue::Set(dto.name),
-            group: Default::default(),
-            description: Default::default(),
+            group: ActiveValue::Set(dto.group),
+            description: ActiveValue::Set(dto.description),
             ..Default::default()
         };
 
