@@ -89,7 +89,7 @@ pub enum Relation {
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
-            Self::User => Entity::belongs_to(super::user::Entity)
+            Self::User => Entity::belongs_to(crate::models::user::Entity)
                 .from(Column::UserId)
                 .to(super::user::Column::Id)
                 .on_update(ForeignKeyAction::Cascade)
@@ -99,7 +99,7 @@ impl RelationTrait for Relation {
     }
 }
 
-impl Related<super::user::Entity> for Entity {
+impl Related<crate::models::user::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::User.def()
     }
