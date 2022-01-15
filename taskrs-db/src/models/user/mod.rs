@@ -88,6 +88,7 @@ impl ActiveModelBehavior for ActiveModel {
 pub enum Relation {
     Permission,
     RefreshToken,
+    Role,
 }
 
 impl RelationTrait for Relation {
@@ -95,6 +96,7 @@ impl RelationTrait for Relation {
         match self {
             Self::Permission => Entity::has_many(crate::models::permission::Entity).into(),
             Self::RefreshToken => Entity::has_many(crate::models::refresh_token::Entity).into(),
+            Self::Role => Entity::has_many(crate::models::role::Entity).into(),
         }
     }
 }
@@ -112,5 +114,15 @@ impl Related<crate::models::permission::Entity> for Entity {
 impl Related<crate::models::refresh_token::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::RefreshToken.def()
+    }
+}
+
+impl Related<crate::models::role::Entity> for Entity {
+    fn to() -> RelationDef {
+        crate::models::user_role::Relation::Role.def()
+    }
+
+    fn via() -> Option<RelationDef> {
+        Some(crate::models::user_role::Relation::User.def().rev())
     }
 }
