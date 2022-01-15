@@ -37,8 +37,8 @@ impl ColumnTrait for Column {
             Self::Id => ColumnType::Integer.def(),
             Self::Name => ColumnType::String(Some(256)).def(),
             Self::Description => ColumnType::String(None).def().nullable(),
-            Self::InsertedAt => ColumnType::DateTime.def(),
-            Self::UpdatedAt => ColumnType::DateTime.def(),
+            Self::InsertedAt => ColumnType::DateTime.def().nullable(),
+            Self::UpdatedAt => ColumnType::DateTime.def().nullable(),
         }
     }
 }

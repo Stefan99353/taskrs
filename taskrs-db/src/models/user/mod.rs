@@ -46,8 +46,8 @@ impl ColumnTrait for Column {
             Self::FirstName => ColumnType::String(Some(256)).def().nullable(),
             Self::LastName => ColumnType::String(Some(256)).def().nullable(),
             Self::Enabled => ColumnType::Boolean.def(),
-            Self::InsertedAt => ColumnType::DateTime.def(),
-            Self::UpdatedAt => ColumnType::DateTime.def(),
+            Self::InsertedAt => ColumnType::DateTime.def().nullable(),
+            Self::UpdatedAt => ColumnType::DateTime.def().nullable(),
         }
     }
 }

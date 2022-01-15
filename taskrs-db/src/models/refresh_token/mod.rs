@@ -43,8 +43,8 @@ impl ColumnTrait for Column {
             Self::Token => ColumnType::String(None).def(),
             Self::Iat => ColumnType::BigInteger.def(),
             Self::Exp => ColumnType::BigInteger.def(),
-            Self::InsertedAt => ColumnType::DateTime.def(),
-            Self::UpdatedAt => ColumnType::DateTime.def(),
+            Self::InsertedAt => ColumnType::DateTime.def().nullable(),
+            Self::UpdatedAt => ColumnType::DateTime.def().nullable(),
         }
     }
 }

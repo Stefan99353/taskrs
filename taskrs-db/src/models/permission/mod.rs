@@ -40,8 +40,8 @@ impl ColumnTrait for Column {
             Self::Name => ColumnType::String(Some(256)).def(),
             Self::Group => ColumnType::String(Some(256)).def(),
             Self::Description => ColumnType::String(None).def().nullable(),
-            Self::InsertedAt => ColumnType::DateTime.def(),
-            Self::UpdatedAt => ColumnType::DateTime.def(),
+            Self::InsertedAt => ColumnType::DateTime.def().nullable(),
+            Self::UpdatedAt => ColumnType::DateTime.def().nullable(),
         }
     }
 }
