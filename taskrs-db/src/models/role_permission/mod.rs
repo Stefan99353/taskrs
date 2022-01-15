@@ -65,5 +65,39 @@ impl ActiveModelBehavior for ActiveModel {
     }
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+#[derive(Copy, Clone, Debug, EnumIter)]
+pub enum Relation {
+    Permission,
+    Role,
+}
+
+impl RelationTrait for Relation {
+    fn def(&self) -> RelationDef {
+        match self {
+            Relation::Permission => Entity::belongs_to(crate::models::permission::Entity)
+                .from(Column::PermissionId)
+                .to(crate::models::permission::Column::Id)
+                .on_update(ForeignKeyAction::Cascade)
+                .on_delete(ForeignKeyAction::Cascade)
+                .into(),
+            Relation::Role => Entity::belongs_to(crate::models::role::Entity)
+                .from(Column::RoleId)
+                .to(crate::models::role::Column::Id)
+                .on_update(ForeignKeyAction::Cascade)
+                .on_delete(ForeignKeyAction::Cascade)
+                .into(),
+        }
+    }
+}
+
+impl Related<crate::models::permission::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Permission.def()
+    }
+}
+
+impl Related<crate::models::role::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Role.def()
+    }
+}
