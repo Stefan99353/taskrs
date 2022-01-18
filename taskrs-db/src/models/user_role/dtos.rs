@@ -15,7 +15,7 @@ impl From<crate::models::user_role::Model> for UserRole {
         Self {
             user_id: model.user_id,
             role_id: model.role_id,
-            inserted_at: model.inserted_at
+            inserted_at: model.inserted_at,
         }
     }
 }

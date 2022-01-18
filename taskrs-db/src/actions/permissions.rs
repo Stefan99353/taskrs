@@ -1,9 +1,9 @@
-use futures::try_join;
-use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
-use sea_orm::prelude::*;
+use crate::models::permission;
 use crate::models::permission::dtos::{Permission, PermissionCreate, PermissionUpdate};
 use crate::sea_query::IntoCondition;
-use crate::models::permission;
+use futures::try_join;
+use sea_orm::prelude::*;
+use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
 
 /// Gets all permissions from database
 pub async fn get_all<F, C>(
@@ -11,9 +11,9 @@ pub async fn get_all<F, C>(
     order: Option<Vec<(Order, C)>>,
     db: &DbConn,
 ) -> Result<Vec<Permission>, DbErr>
-    where
-        F: IntoCondition,
-        C: IntoSimpleExpr,
+where
+    F: IntoCondition,
+    C: IntoSimpleExpr,
 {
     let mut query = permission::Entity::find();
 
@@ -41,9 +41,9 @@ pub async fn get_paginated<F, C>(
     order: Option<Vec<(Order, C)>>,
     db: &DbConn,
 ) -> Result<(Vec<Permission>, usize), DbErr>
-    where
-        F: IntoCondition,
-        C: IntoSimpleExpr,
+where
+    F: IntoCondition,
+    C: IntoSimpleExpr,
 {
     let mut query = permission::Entity::find();
 
@@ -69,8 +69,8 @@ pub async fn get<F>(
     condition: Option<F>,
     db: &DbConn,
 ) -> Result<Option<Permission>, DbErr>
-    where
-        F: IntoCondition,
+where
+    F: IntoCondition,
 {
     let mut query = if let Some(id) = id {
         permission::Entity::find_by_id(id)
@@ -99,8 +99,8 @@ pub async fn update(permission: PermissionUpdate, db: &DbConn) -> Result<Permiss
 
 /// Deletes a permission
 pub async fn delete<F>(id: Option<i32>, condition: Option<F>, db: &DbConn) -> Result<u64, DbErr>
-    where
-        F: IntoCondition,
+where
+    F: IntoCondition,
 {
     let mut query = if let Some(id) = id {
         permission::Entity::delete_many().filter(permission::Column::Id.eq(id))

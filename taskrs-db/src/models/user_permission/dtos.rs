@@ -15,7 +15,7 @@ impl From<crate::models::user_permission::Model> for UserPermission {
         Self {
             user_id: model.user_id,
             permission_id: model.permission_id,
-            inserted_at: model.inserted_at
+            inserted_at: model.inserted_at,
         }
     }
 }

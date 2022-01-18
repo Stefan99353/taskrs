@@ -99,7 +99,11 @@ impl Related<crate::models::role::Entity> for Entity {
     }
 
     fn via() -> Option<RelationDef> {
-        Some(crate::models::role_permission::Relation::Permission.def().rev())
+        Some(
+            crate::models::role_permission::Relation::Permission
+                .def()
+                .rev(),
+        )
     }
 }
 
@@ -109,6 +113,10 @@ impl Related<crate::models::user::Entity> for Entity {
     }
 
     fn via() -> Option<RelationDef> {
-        Some(crate::models::user_permission::Relation::Permission.def().rev())
+        Some(
+            crate::models::user_permission::Relation::Permission
+                .def()
+                .rev(),
+        )
     }
 }

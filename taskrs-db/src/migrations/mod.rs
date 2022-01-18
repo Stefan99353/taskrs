@@ -1,8 +1,10 @@
 mod create_refresh_tokens;
+mod create_role_based_access_control;
 mod create_users;
 
 use async_trait::async_trait;
 use create_refresh_tokens::CreateRefreshTokensMigration;
+use create_role_based_access_control::CreateRoleBasedAccessControlMigration;
 use create_users::CreateUsersMigration;
 use sea_orm::prelude::*;
 use sea_orm::{
@@ -20,6 +22,7 @@ impl Migrations {
             migrations: vec![
                 Box::new(CreateUsersMigration),
                 Box::new(CreateRefreshTokensMigration),
+                Box::new(CreateRoleBasedAccessControlMigration),
             ],
             _target: target,
         }
@@ -30,6 +33,7 @@ impl Migrations {
             .await
             .map_err(TransactionError::Connection)?;
 
+        // TODO: Run migrations in order
         for migration in self.migrations {
             migration.up(db).await?;
         }
