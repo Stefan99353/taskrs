@@ -9,7 +9,7 @@ pub(crate) struct CreateRoleBasedAccessControlMigration;
 #[async_trait]
 impl Migration for CreateRoleBasedAccessControlMigration {
     fn order(&self) -> u32 {
-        3
+        20
     }
 
     fn name(&self) -> String {

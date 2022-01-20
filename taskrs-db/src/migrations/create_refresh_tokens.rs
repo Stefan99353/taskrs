@@ -9,7 +9,7 @@ pub(crate) struct CreateRefreshTokensMigration;
 #[async_trait]
 impl Migration for CreateRefreshTokensMigration {
     fn order(&self) -> u32 {
-        1
+        10
     }
 
     fn name(&self) -> String {

@@ -6,14 +6,16 @@ use async_trait::async_trait;
 use create_refresh_tokens::CreateRefreshTokensMigration;
 use create_role_based_access_control::CreateRoleBasedAccessControlMigration;
 use create_users::CreateUsersMigration;
+use itertools::Itertools;
 use sea_orm::prelude::*;
 use sea_orm::{
-    ActiveValue, ConnectionTrait, DbBackend, ExecResult, Schema, Statement, TransactionError,
+    ActiveValue, ConnectionTrait, DbBackend, ExecResult, QueryOrder, Schema, Statement,
+    TransactionError,
 };
 
 pub struct Migrations {
     migrations: Vec<Box<dyn Migration>>,
-    _target: Option<String>,
+    target: Option<String>,
 }
 
 impl Migrations {
@@ -24,18 +26,77 @@ impl Migrations {
                 Box::new(CreateRefreshTokensMigration),
                 Box::new(CreateRoleBasedAccessControlMigration),
             ],
-            _target: target,
+            target,
         }
     }
 
-    pub async fn run(self, db: &DbConn) -> Result<(), TransactionError<DbErr>> {
+    pub async fn run(self, db: &DbConn) -> Result<(), MigrationError> {
         create_migrations_table(db)
             .await
-            .map_err(TransactionError::Connection)?;
+            .map_err(|e| MigrationError::Db(TransactionError::Connection(e)))?;
 
-        // TODO: Run migrations in order
-        for migration in self.migrations {
-            migration.up(db).await?;
+        let ordered_migrations = self
+            .migrations
+            .into_iter()
+            .sorted_by(|a, b| Ord::cmp(&a.order(), &b.order()));
+
+        if let Some(target) = self.target {
+            // Update/Downgrade to specific migration
+            Migrations::run_to_target(ordered_migrations.collect(), target, db).await?;
+        } else {
+            // Update to latest migration
+            for migration in ordered_migrations {
+                migration.up(db).await.map_err(MigrationError::Db)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn run_to_target(
+        migrations: Vec<Box<dyn Migration>>,
+        target: String,
+        db: &DbConn,
+    ) -> Result<(), MigrationError> {
+        // Check if target is a valid
+        let target_order =
+            if let Some(target_migration) = migrations.iter().find(|m| m.name() == target) {
+                target_migration.order()
+            } else {
+                // Target is no valid migration
+                return Err(MigrationError::TargetInvalid);
+            };
+
+        // Get already run migrations
+        let db_migrations = migration::Entity::find()
+            .order_by_asc(migration::Column::Order)
+            .all(db)
+            .await
+            .map_err(|e| MigrationError::Db(TransactionError::Connection(e)))?;
+
+        // Check if need to down or up
+        if db_migrations.iter().any(|m| m.name == target) {
+            // Downgrade
+            let down_migration_names: Vec<String> = db_migrations
+                .iter()
+                .filter(|m| m.order > target_order)
+                .map(|m| m.name.clone())
+                .collect();
+
+            let down_migrations = migrations
+                .iter()
+                .filter(|m| down_migration_names.iter().any(|dm| dm == &m.name()));
+
+            for down_migration in down_migrations.rev() {
+                down_migration.down(db).await.map_err(MigrationError::Db)?;
+            }
+        } else {
+            // Upgrade
+            let up_migrations = migrations.iter().filter(|m| m.order() <= target_order);
+
+            for up_migration in up_migrations {
+                up_migration.up(db).await.map_err(MigrationError::Db)?;
+            }
         }
 
         Ok(())
@@ -49,6 +110,23 @@ async fn create_migrations_table(db: &DbConn) -> Result<ExecResult, DbErr> {
 
     db.execute(db.get_database_backend().build(&stmt)).await
 }
+
+#[derive(Debug)]
+pub enum MigrationError {
+    Db(TransactionError<DbErr>),
+    TargetInvalid,
+}
+
+impl std::fmt::Display for MigrationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MigrationError::Db(e) => std::fmt::Display::fmt(e, f),
+            MigrationError::TargetInvalid => write!(f, "Provided target migration is not valid"),
+        }
+    }
+}
+
+impl std::error::Error for MigrationError {}
 
 /// Trait provides necessary functionality to create database migrations
 #[async_trait]

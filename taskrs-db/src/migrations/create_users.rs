@@ -9,7 +9,7 @@ pub(crate) struct CreateUsersMigration;
 #[async_trait]
 impl Migration for CreateUsersMigration {
     fn order(&self) -> u32 {
-        1
+        0
     }
 
     fn name(&self) -> String {
