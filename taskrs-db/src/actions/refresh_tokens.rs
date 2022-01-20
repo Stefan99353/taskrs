@@ -1,8 +1,8 @@
 use crate::models::refresh_token;
 use crate::models::refresh_token::dtos::{RefreshToken, RefreshTokenCreate, RefreshTokenUpdate};
-use crate::sea_query::IntoCondition;
 use futures::try_join;
 use sea_orm::prelude::*;
+use sea_orm::sea_query::IntoCondition;
 use sea_orm::{DbConn, DbErr, IntoSimpleExpr, Order, QueryOrder};
 
 /// Gets all refresh tokens from database

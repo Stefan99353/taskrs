@@ -1,9 +1,9 @@
 use crate::actions::errors::AlterUserError;
 use crate::models::user;
 use crate::models::user::dtos::{User, UserCreate, UserUpdate};
-use crate::sea_query::IntoCondition;
 use futures::try_join;
 use sea_orm::prelude::*;
+use sea_orm::sea_query::IntoCondition;
 use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
 
 /// Gets all users from database

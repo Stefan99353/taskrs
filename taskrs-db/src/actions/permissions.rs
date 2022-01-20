@@ -1,8 +1,8 @@
 use crate::models::permission;
 use crate::models::permission::dtos::{Permission, PermissionCreate, PermissionUpdate};
-use crate::sea_query::IntoCondition;
 use futures::try_join;
 use sea_orm::prelude::*;
+use sea_orm::sea_query::IntoCondition;
 use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
 
 /// Gets all permissions from database

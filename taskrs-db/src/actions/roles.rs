@@ -1,8 +1,8 @@
 use crate::models::role;
 use crate::models::role::dtos::{Role, RoleCreate, RoleUpdate};
-use crate::sea_query::IntoCondition;
 use futures::try_join;
 use sea_orm::prelude::*;
+use sea_orm::sea_query::IntoCondition;
 use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
 
 /// Gets all roles from database
