@@ -45,7 +45,25 @@ impl Migrations {
             Migrations::run_to_target(ordered_migrations.collect(), target, db).await?;
         } else {
             // Update to latest migration
-            for migration in ordered_migrations {
+            Migrations::check_and_up(ordered_migrations.collect(), db).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn check_and_up(
+        migrations: Vec<Box<dyn Migration>>,
+        db: &DbConn,
+    ) -> Result<(), MigrationError> {
+        // Get already run migrations
+        let db_migrations = migration::Entity::find()
+            .order_by_asc(migration::Column::Order)
+            .all(db)
+            .await
+            .map_err(|e| MigrationError::Db(TransactionError::Connection(e)))?;
+
+        for migration in migrations {
+            if !db_migrations.iter().any(|m| m.name == migration.name()) {
                 migration.up(db).await.map_err(MigrationError::Db)?;
             }
         }
@@ -92,11 +110,8 @@ impl Migrations {
             }
         } else {
             // Upgrade
-            let up_migrations = migrations.iter().filter(|m| m.order() <= target_order);
-
-            for up_migration in up_migrations {
-                up_migration.up(db).await.map_err(MigrationError::Db)?;
-            }
+            let up_migrations = migrations.into_iter().filter(|m| m.order() <= target_order);
+            Migrations::check_and_up(up_migrations.collect(), db).await?;
         }
 
         Ok(())

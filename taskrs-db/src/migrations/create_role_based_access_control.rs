@@ -2,6 +2,7 @@ use crate::migrations::Migration;
 use crate::models::{permission, role, role_permission, user_permission, user_role};
 use async_trait::async_trait;
 use sea_orm::{DbBackend, Schema, Statement};
+use sea_orm::sea_query::Table;
 
 #[derive(Default)]
 pub(crate) struct CreateRoleBasedAccessControlMigration;
@@ -21,29 +22,60 @@ impl Migration for CreateRoleBasedAccessControlMigration {
         let mut statements = vec![];
 
         // Permissions
-        let mut permissions_stmt = schema.create_table_from_entity(permission::Entity);
-        permissions_stmt.if_not_exists();
+        let permissions_stmt = schema.create_table_from_entity(permission::Entity);
         statements.push(backend.build(&permissions_stmt));
 
         // Roles
-        let mut roles_stmt = schema.create_table_from_entity(role::Entity);
-        roles_stmt.if_not_exists();
+        let roles_stmt = schema.create_table_from_entity(role::Entity);
         statements.push(backend.build(&roles_stmt));
 
         // UserPermissions
-        let mut user_permissions_stmt = schema.create_table_from_entity(user_permission::Entity);
-        user_permissions_stmt.if_not_exists();
+        let user_permissions_stmt = schema.create_table_from_entity(user_permission::Entity);
         statements.push(backend.build(&user_permissions_stmt));
 
         // RolePermissions
-        let mut role_permissions_stmt = schema.create_table_from_entity(role_permission::Entity);
-        role_permissions_stmt.if_not_exists();
+        let role_permissions_stmt = schema.create_table_from_entity(role_permission::Entity);
         statements.push(backend.build(&role_permissions_stmt));
 
         // UserRoles
-        let mut user_roles_stmt = schema.create_table_from_entity(user_role::Entity);
-        user_roles_stmt.if_not_exists();
+        let user_roles_stmt = schema.create_table_from_entity(user_role::Entity);
         statements.push(backend.build(&user_roles_stmt));
+
+        statements
+    }
+
+    fn down_statements(&self, backend: DbBackend) -> Vec<Statement> {
+        let mut statements = vec![];
+
+        // UserRoles
+        let user_roles_stmt = Table::drop()
+            .table(user_role::Entity)
+            .to_owned();
+        statements.push(backend.build(&user_roles_stmt));
+
+        // RolePermissions
+        let role_permissions_stmt = Table::drop()
+            .table(role_permission::Entity)
+            .to_owned();
+        statements.push(backend.build(&role_permissions_stmt));
+
+        // UserPermissions
+        let user_permissions_stmt = Table::drop()
+            .table(user_permission::Entity)
+            .to_owned();
+        statements.push(backend.build(&user_permissions_stmt));
+
+        // Roles
+        let roles_stmt = Table::drop()
+            .table(role::Entity)
+            .to_owned();
+        statements.push(backend.build(&roles_stmt));
+
+        // Permissions
+        let permissions_stmt = Table::drop()
+            .table(permission::Entity)
+            .to_owned();
+        statements.push(backend.build(&permissions_stmt));
 
         statements
     }
