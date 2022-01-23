@@ -1,8 +1,8 @@
 use crate::migrations::Migration;
 use crate::models::user;
 use async_trait::async_trait;
-use sea_orm::{DbBackend, Schema, Statement};
 use sea_orm::sea_query::Table;
+use sea_orm::{DbBackend, Schema, Statement};
 
 #[derive(Default)]
 pub(crate) struct CreateUsersMigration;
@@ -25,9 +25,7 @@ impl Migration for CreateUsersMigration {
     }
 
     fn down_statements(&self, backend: DbBackend) -> Vec<Statement> {
-        let stmt = Table::drop()
-            .table(user::Entity)
-            .to_owned();
+        let stmt = Table::drop().table(user::Entity).to_owned();
 
         vec![backend.build(&stmt)]
     }

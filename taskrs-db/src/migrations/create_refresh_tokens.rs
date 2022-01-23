@@ -1,8 +1,8 @@
 use crate::migrations::Migration;
 use crate::models::refresh_token;
 use async_trait::async_trait;
-use sea_orm::{DbBackend, Schema, Statement};
 use sea_orm::sea_query::Table;
+use sea_orm::{DbBackend, Schema, Statement};
 
 #[derive(Default)]
 pub(crate) struct CreateRefreshTokensMigration;
@@ -25,9 +25,7 @@ impl Migration for CreateRefreshTokensMigration {
     }
 
     fn down_statements(&self, backend: DbBackend) -> Vec<Statement> {
-        let stmt = Table::drop()
-            .table(refresh_token::Entity)
-            .to_owned();
+        let stmt = Table::drop().table(refresh_token::Entity).to_owned();
 
         vec![backend.build(&stmt)]
     }

@@ -1,8 +1,8 @@
 use crate::migrations::Migration;
 use crate::models::{permission, role, role_permission, user_permission, user_role};
 use async_trait::async_trait;
-use sea_orm::{DbBackend, Schema, Statement};
 use sea_orm::sea_query::Table;
+use sea_orm::{DbBackend, Schema, Statement};
 
 #[derive(Default)]
 pub(crate) struct CreateRoleBasedAccessControlMigration;
@@ -48,33 +48,23 @@ impl Migration for CreateRoleBasedAccessControlMigration {
         let mut statements = vec![];
 
         // UserRoles
-        let user_roles_stmt = Table::drop()
-            .table(user_role::Entity)
-            .to_owned();
+        let user_roles_stmt = Table::drop().table(user_role::Entity).to_owned();
         statements.push(backend.build(&user_roles_stmt));
 
         // RolePermissions
-        let role_permissions_stmt = Table::drop()
-            .table(role_permission::Entity)
-            .to_owned();
+        let role_permissions_stmt = Table::drop().table(role_permission::Entity).to_owned();
         statements.push(backend.build(&role_permissions_stmt));
 
         // UserPermissions
-        let user_permissions_stmt = Table::drop()
-            .table(user_permission::Entity)
-            .to_owned();
+        let user_permissions_stmt = Table::drop().table(user_permission::Entity).to_owned();
         statements.push(backend.build(&user_permissions_stmt));
 
         // Roles
-        let roles_stmt = Table::drop()
-            .table(role::Entity)
-            .to_owned();
+        let roles_stmt = Table::drop().table(role::Entity).to_owned();
         statements.push(backend.build(&roles_stmt));
 
         // Permissions
-        let permissions_stmt = Table::drop()
-            .table(permission::Entity)
-            .to_owned();
+        let permissions_stmt = Table::drop().table(permission::Entity).to_owned();
         statements.push(backend.build(&permissions_stmt));
 
         statements
