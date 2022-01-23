@@ -3,19 +3,15 @@ use crate::models::user;
 use crate::models::user::dtos::{User, UserCreate, UserUpdate};
 use futures::try_join;
 use sea_orm::prelude::*;
-use sea_orm::sea_query::IntoCondition;
-use sea_orm::{IntoSimpleExpr, Order, QueryOrder};
+use sea_orm::sea_query::SimpleExpr;
+use sea_orm::{Condition, Order, QueryOrder};
 
 /// Gets all users from database
-pub async fn get_all<F, C>(
-    condition: Option<F>,
-    order: Option<Vec<(Order, C)>>,
+pub async fn get_all(
+    condition: Option<Condition>,
+    order: Option<Vec<(Order, SimpleExpr)>>,
     db: &DbConn,
-) -> Result<Vec<User>, DbErr>
-where
-    F: IntoCondition,
-    C: IntoSimpleExpr,
-{
+) -> Result<Vec<User>, DbErr> {
     let mut query = user::Entity::find();
 
     if let Some(condition) = condition {
@@ -35,17 +31,13 @@ where
 }
 
 /// Gets all users from database in a paginated form
-pub async fn get_paginated<F, C>(
+pub async fn get_paginated(
     page: usize,
     limit: usize,
-    condition: Option<F>,
-    order: Option<Vec<(Order, C)>>,
+    condition: Option<Condition>,
+    order: Option<Vec<(Order, SimpleExpr)>>,
     db: &DbConn,
-) -> Result<(Vec<User>, usize), DbErr>
-where
-    F: IntoCondition,
-    C: IntoSimpleExpr,
-{
+) -> Result<(Vec<User>, usize), DbErr> {
     let mut query = user::Entity::find();
 
     if let Some(condition) = condition {
@@ -65,15 +57,11 @@ where
 }
 
 /// Gets a single user from the database using an ID and/or a condition
-pub async fn get<F, C>(
+pub async fn get(
     id: Option<i32>,
-    condition: Option<F>,
+    condition: Option<Condition>,
     db: &DbConn,
-) -> Result<Option<User>, DbErr>
-where
-    F: IntoCondition,
-    C: IntoSimpleExpr,
-{
+) -> Result<Option<User>, DbErr> {
     let mut query = if let Some(id) = id {
         user::Entity::find_by_id(id)
     } else {
@@ -133,10 +121,11 @@ pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserErro
 }
 
 /// Deletes a user
-pub async fn delete<F>(id: Option<i32>, condition: Option<F>, db: &DbConn) -> Result<u64, DbErr>
-where
-    F: IntoCondition,
-{
+pub async fn delete(
+    id: Option<i32>,
+    condition: Option<Condition>,
+    db: &DbConn,
+) -> Result<u64, DbErr> {
     let mut query = if let Some(id) = id {
         user::Entity::delete_many().filter(user::Column::Id.eq(id))
     } else {
