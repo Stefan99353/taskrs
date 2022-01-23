@@ -13,6 +13,8 @@ use sea_orm::{
     TransactionError,
 };
 
+/// Used to perform migrations.
+/// Use `target` to update database to a specific migration.
 pub struct Migrations {
     migrations: Vec<Box<dyn Migration>>,
     target: Option<String>,
@@ -30,11 +32,21 @@ impl Migrations {
         }
     }
 
+    /// Runs the migrations. If a target is present, tries to update database to that specific migration.
+    #[instrument(
+        name = "migrations_run",
+        level = "debug",
+        skip_all,
+        err,
+        fields(target)
+    )]
     pub async fn run(self, db: &DbConn) -> Result<(), MigrationError> {
+        debug!("Creating migrations table if it does not exist");
         create_migrations_table(db)
             .await
             .map_err(|e| MigrationError::Db(TransactionError::Connection(e)))?;
 
+        trace!("Sort migrations by their order property");
         let ordered_migrations = self
             .migrations
             .into_iter()
@@ -42,9 +54,12 @@ impl Migrations {
 
         if let Some(target) = self.target {
             // Update/Downgrade to specific migration
+            tracing::Span::current().record("target", &tracing::field::display(&target));
+            debug!("Updating database to specific migrations");
             Migrations::run_to_target(ordered_migrations.collect(), target, db).await?;
         } else {
             // Update to latest migration
+            debug!("Updating database to latest migration");
             Migrations::check_and_up(ordered_migrations.collect(), db).await?;
         }
 
@@ -56,12 +71,14 @@ impl Migrations {
         db: &DbConn,
     ) -> Result<(), MigrationError> {
         // Get already run migrations
+        debug!("Get already run migrations to skip them");
         let db_migrations = migration::Entity::find()
             .order_by_asc(migration::Column::Order)
             .all(db)
             .await
             .map_err(|e| MigrationError::Db(TransactionError::Connection(e)))?;
 
+        debug!("Running remaining migrations");
         for migration in migrations {
             if !db_migrations.iter().any(|m| m.name == migration.name()) {
                 migration.up(db).await.map_err(MigrationError::Db)?;
@@ -77,6 +94,7 @@ impl Migrations {
         db: &DbConn,
     ) -> Result<(), MigrationError> {
         // Check if target is a valid
+        debug!("Check if provided target is a known migration");
         let target_order =
             if let Some(target_migration) = migrations.iter().find(|m| m.name() == target) {
                 target_migration.order()
@@ -86,6 +104,7 @@ impl Migrations {
             };
 
         // Get already run migrations
+        debug!("Retrieve database migration state to determine if need to upgrade or downgrade");
         let db_migrations = migration::Entity::find()
             .order_by_asc(migration::Column::Order)
             .all(db)
@@ -95,6 +114,7 @@ impl Migrations {
         // Check if need to down or up
         if db_migrations.iter().any(|m| m.name == target) {
             // Downgrade
+            debug!("Downgrade to target migration");
             let down_migration_names: Vec<String> = db_migrations
                 .iter()
                 .filter(|m| m.order > target_order)
@@ -110,6 +130,7 @@ impl Migrations {
             }
         } else {
             // Upgrade
+            debug!("Upgrade to target migration");
             let up_migrations = migrations.into_iter().filter(|m| m.order() <= target_order);
             Migrations::check_and_up(up_migrations.collect(), db).await?;
         }
@@ -159,6 +180,16 @@ pub trait Migration: Sync {
     }
 
     /// Executes the migration
+    #[instrument(
+        name = "migration_up",
+        level = "debug",
+        skip_all,
+        err,
+        fields(
+            name = %self.name(),
+            order = self.order(),
+        )
+    )]
     async fn up(&self, db: &DbConn) -> Result<(), TransactionError<DbErr>> {
         let name = self.name();
         let order = self.order();
@@ -166,21 +197,27 @@ pub trait Migration: Sync {
 
         db.transaction::<_, (), DbErr>(|txn| {
             Box::pin(async move {
+                debug!("Started transaction");
+
+                debug!("Check if migration already exists");
                 if migration::Entity::find_by_id(name.clone())
                     .one(txn)
                     .await?
                     .is_some()
                 {
                     // Migration is already present
+                    debug!("Migration already exists. Skipping");
                     return Ok(());
                 }
 
                 // Run statements
+                debug!("Execute up statements");
                 for statement in statements {
                     txn.execute(statement).await?;
                 }
 
                 // Insert migration
+                debug!("Insert migration into migrations table");
                 migration::ActiveModel {
                     name: ActiveValue::Set(name),
                     order: ActiveValue::Set(order),
@@ -189,6 +226,7 @@ pub trait Migration: Sync {
                 .insert(txn)
                 .await?;
 
+                debug!("Migration successful");
                 Ok(())
             })
         })
@@ -196,22 +234,37 @@ pub trait Migration: Sync {
     }
 
     /// Rolls back the migration
+    #[instrument(
+        name = "migration_down",
+        level = "debug",
+        skip_all,
+        err,
+        fields(
+            name = %self.name(),
+        )
+    )]
     async fn down(&self, db: &DbConn) -> Result<(), TransactionError<DbErr>> {
         let name = self.name();
         let statements = self.down_statements(db.get_database_backend());
 
         db.transaction::<_, (), DbErr>(|txn| {
             Box::pin(async move {
+                debug!("Started transaction");
+
+                debug!("Check if migration exists");
                 if let Some(db_mig) = migration::Entity::find_by_id(name.clone()).one(txn).await? {
                     // Run statements
+                    debug!("Execute down statements");
                     for statement in statements {
                         txn.execute(statement).await?;
                     }
 
                     // Remove migration
+                    debug!("Remove migration from migrations table");
                     db_mig.delete(txn).await?;
                 }
 
+                debug!("Migration successful");
                 Ok(())
             })
         })

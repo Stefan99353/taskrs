@@ -9,13 +9,23 @@ use sea_orm::JoinType;
 use sea_orm::{ActiveValue, Condition, ConnectionTrait, QuerySelect, TransactionError};
 use std::collections::HashSet;
 
-// User Permissions
+/// Grant permissions to user. Only grants new permissions.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn grant_user_permissions(
     user_id: i32,
     permission_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), DbErr> {
     // Get permission ids of user
+    debug!("Get current permissions of user");
     let old_permission_ids: HashSet<i32> = user_permission::Entity::find()
         .select_only()
         .column(user_permission::Column::PermissionId)
@@ -27,6 +37,7 @@ pub async fn grant_user_permissions(
         .collect();
 
     // Get difference and create active models for inserting
+    trace!("Filter out permissions the user already has");
     let new_permission_ids: HashSet<i32> = permission_ids.into_iter().collect();
     let active_models =
         (&new_permission_ids - &old_permission_ids)
@@ -38,6 +49,7 @@ pub async fn grant_user_permissions(
             });
 
     // Insert models
+    debug!("Inserting new permissions");
     user_permission::Entity::insert_many(active_models)
         .exec(db)
         .await?;
@@ -45,12 +57,23 @@ pub async fn grant_user_permissions(
     Ok(())
 }
 
+/// Revoke permissions from user.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn revoke_user_permissions(
     user_id: i32,
     permission_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), DbErr> {
     // Delete permissions of user
+    debug!("Removing permissions");
     user_permission::Entity::delete_many()
         .filter(user_permission::Column::UserId.eq(user_id))
         .filter(user_permission::Column::PermissionId.is_in(permission_ids))
@@ -60,12 +83,23 @@ pub async fn revoke_user_permissions(
     Ok(())
 }
 
+/// Set permissions for user.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn set_user_permissions(
     user_id: i32,
     permission_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), TransactionError<DbErr>> {
     // Create active models for inserting
+    trace!("Creating models for inserting to keep transaction short");
     let active_models: Vec<user_permission::ActiveModel> = permission_ids
         .iter()
         .map(|permission_id| user_permission::ActiveModel {
@@ -78,30 +112,45 @@ pub async fn set_user_permissions(
     // Execute in transaction
     db.transaction::<_, (), DbErr>(|txn| {
         Box::pin(async move {
+            debug!("Starting transaction");
+
             // Delete all permissions of user
+            debug!("Removing all permissions from user");
             user_permission::Entity::delete_many()
                 .filter(user_permission::Column::UserId.eq(user_id))
                 .exec(txn)
                 .await?;
 
             // Insert new permissions
+            debug!("Inserting new permissions for user");
             user_permission::Entity::insert_many(active_models)
                 .exec(txn)
                 .await?;
 
+            debug!("Setting permissions successful");
             Ok(())
         })
     })
     .await
 }
 
-// Role Permissions
+/// Grant permissions to role. Only grants new permissions.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        role_id = role_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn grant_role_permissions(
     role_id: i32,
     permission_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), DbErr> {
     // Get permission ids of role
+    debug!("Get current permissions of role");
     let old_permission_ids: HashSet<i32> = role_permission::Entity::find()
         .select_only()
         .column(role_permission::Column::PermissionId)
@@ -113,6 +162,7 @@ pub async fn grant_role_permissions(
         .collect();
 
     // Get difference and create active models for inserting
+    trace!("Filter out permissions the role already has");
     let new_permission_ids: HashSet<i32> = permission_ids.into_iter().collect();
     let active_models =
         (&new_permission_ids - &old_permission_ids)
@@ -124,6 +174,7 @@ pub async fn grant_role_permissions(
             });
 
     // Insert models
+    debug!("Inserting new permissions");
     role_permission::Entity::insert_many(active_models)
         .exec(db)
         .await?;
@@ -131,12 +182,23 @@ pub async fn grant_role_permissions(
     Ok(())
 }
 
+/// Revoke permissions from role.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        role_id = role_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn revoke_role_permissions(
     role_id: i32,
     permission_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), DbErr> {
     // Delete permissions of role
+    debug!("Removing permissions");
     role_permission::Entity::delete_many()
         .filter(role_permission::Column::RoleId.eq(role_id))
         .filter(role_permission::Column::PermissionId.is_in(permission_ids))
@@ -146,12 +208,23 @@ pub async fn revoke_role_permissions(
     Ok(())
 }
 
+/// Set permissions for role.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        role_id = role_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn set_role_permissions(
     role_id: i32,
     permission_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), TransactionError<DbErr>> {
     // Create active models for inserting
+    trace!("Creating models for inserting to keep transaction short");
     let active_models: Vec<role_permission::ActiveModel> = permission_ids
         .iter()
         .map(|permission_id| role_permission::ActiveModel {
@@ -164,26 +237,41 @@ pub async fn set_role_permissions(
     // Execute in transaction
     db.transaction::<_, (), DbErr>(|txn| {
         Box::pin(async move {
+            debug!("Starting transaction");
+
             // Delete all permissions of role
+            debug!("Removing all permissions from role");
             role_permission::Entity::delete_many()
                 .filter(role_permission::Column::RoleId.eq(role_id))
                 .exec(txn)
                 .await?;
 
             // Insert new permissions
+            debug!("Inserting new permissions for role");
             role_permission::Entity::insert_many(active_models)
                 .exec(txn)
                 .await?;
 
+            debug!("Setting permissions successful");
             Ok(())
         })
     })
     .await
 }
 
-// User Roles
+/// Add user to roles. Only adds user to new roles.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        role_ids = tracing::field::debug(&role_ids),
+    )
+)]
 pub async fn add_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Result<(), DbErr> {
     // Get role ids of user
+    debug!("Get current roles of user");
     let old_role_ids: HashSet<i32> = user_role::Entity::find()
         .select_only()
         .column(user_role::Column::RoleId)
@@ -195,6 +283,7 @@ pub async fn add_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Re
         .collect();
 
     // Get difference and create active models for inserting
+    trace!("Filter out roles the user already has");
     let new_role_ids: HashSet<i32> = role_ids.into_iter().collect();
     let active_models =
         (&new_role_ids - &old_role_ids)
@@ -206,6 +295,7 @@ pub async fn add_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Re
             });
 
     // Insert models
+    debug!("Inserting new roles");
     user_role::Entity::insert_many(active_models)
         .exec(db)
         .await?;
@@ -213,8 +303,19 @@ pub async fn add_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Re
     Ok(())
 }
 
+/// Remove roles from user.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        role_ids = tracing::field::debug(&role_ids),
+    )
+)]
 pub async fn remove_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Result<(), DbErr> {
     // Delete roles of user
+    debug!("Removing roles");
     user_role::Entity::delete_many()
         .filter(user_role::Column::UserId.eq(user_id))
         .filter(user_role::Column::RoleId.is_in(role_ids))
@@ -224,12 +325,23 @@ pub async fn remove_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) ->
     Ok(())
 }
 
+/// Set roles for user.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        role_ids = tracing::field::debug(&role_ids),
+    )
+)]
 pub async fn set_user_roles(
     user_id: i32,
     role_ids: Vec<i32>,
     db: &DbConn,
 ) -> Result<(), TransactionError<DbErr>> {
     // Create active models for inserting
+    trace!("Creating models for inserting to keep transaction short");
     let active_models: Vec<user_role::ActiveModel> = role_ids
         .iter()
         .map(|role_id| user_role::ActiveModel {
@@ -242,24 +354,39 @@ pub async fn set_user_roles(
     // Execute in transaction
     db.transaction::<_, (), DbErr>(|txn| {
         Box::pin(async move {
+            debug!("Starting transaction");
+
             // Delete all roles of user
+            debug!("Removing all roles from user");
             user_role::Entity::delete_many()
                 .filter(user_role::Column::UserId.eq(user_id))
                 .exec(txn)
                 .await?;
 
             // Insert new roles
+            debug!("Inserting new permissions for role");
             user_role::Entity::insert_many(active_models)
                 .exec(txn)
                 .await?;
 
+            debug!("Setting roles successful");
             Ok(())
         })
     })
     .await
 }
 
+/// Get permissions of user. Only gets direct permissions (Without roles).
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+    )
+)]
 pub async fn get_permissions_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Permission>, DbErr> {
+    debug!("Getting all direct permissions of user");
     permission::Entity::find()
         .filter(user_permission::Column::UserId.eq(user_id))
         .join_rev(
@@ -271,7 +398,17 @@ pub async fn get_permissions_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Pe
         .map(|models| models.into_iter().map(|model| model.into()).collect())
 }
 
+/// Get permissions of role.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        role_id = role_id,
+    )
+)]
 pub async fn get_permission_of_role(role_id: i32, db: &DbConn) -> Result<Vec<Permission>, DbErr> {
+    debug!("Getting all permissions of role");
     permission::Entity::find()
         .filter(role_permission::Column::RoleId.eq(role_id))
         .join_rev(
@@ -283,7 +420,17 @@ pub async fn get_permission_of_role(role_id: i32, db: &DbConn) -> Result<Vec<Per
         .map(|models| models.into_iter().map(|model| model.into()).collect())
 }
 
+/// Get roles of user.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+    )
+)]
 pub async fn get_roles_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Role>, DbErr> {
+    debug!("Getting all roles of user");
     role::Entity::find()
         .filter(user_role::Column::UserId.eq(user_id))
         .join_rev(JoinType::InnerJoin, user_role::Relation::Role.def())
@@ -292,6 +439,15 @@ pub async fn get_roles_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Role>, D
         .map(|models| models.into_iter().map(|model| model.into()).collect())
 }
 
+/// Get all permissions a user has. Includes inherited permissions of roles.
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+    )
+)]
 pub async fn get_all_permission_of_user(
     user_id: i32,
     db: &DbConn,
@@ -309,6 +465,7 @@ pub async fn get_all_permission_of_user(
     //     WHERE u.id = 1
     // )
 
+    debug!("Getting all permissions of user");
     permission::Entity::find()
         .filter(
             permission::Column::Id.in_subquery(
@@ -362,16 +519,37 @@ pub async fn get_all_permission_of_user(
         .map(|models| models.into_iter().map(|model| model.into()).collect())
 }
 
+/// Check if a user has a permission
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        permission_id = permission_id,
+    )
+)]
 pub async fn has_one_permission(
     user_id: i32,
     permission_id: i32,
     db: &DbConn,
 ) -> Result<bool, DbErr> {
-    get_all_permission_of_user(user_id, db)
-        .await
-        .map(|permissions| permissions.iter().any(|p| p.id == permission_id))
+    let all_permissions = get_all_permission_of_user(user_id, db).await;
+
+    debug!("Checking if permission is included");
+    all_permissions.map(|permissions| permissions.iter().any(|p| p.id == permission_id))
 }
 
+/// Check if a user has one of multiple permissions
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn has_any_permission(
     user_id: i32,
     permission_ids: Vec<i32>,
@@ -379,6 +557,7 @@ pub async fn has_any_permission(
 ) -> Result<bool, DbErr> {
     let all_permissions = get_all_permission_of_user(user_id, db).await?;
 
+    debug!("Checking if one permission is included");
     for per in all_permissions {
         if permission_ids.iter().any(|p| p == &per.id) {
             return Ok(true);
@@ -388,6 +567,16 @@ pub async fn has_any_permission(
     Ok(false)
 }
 
+/// Check if a user has all of multiple permissions
+#[instrument(
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        user_id = user_id,
+        permission_ids = tracing::field::debug(&permission_ids),
+    )
+)]
 pub async fn has_all_permissions(
     user_id: i32,
     permission_ids: Vec<i32>,
@@ -395,6 +584,7 @@ pub async fn has_all_permissions(
 ) -> Result<bool, DbErr> {
     let all_permissions = get_all_permission_of_user(user_id, db).await?;
 
+    debug!("Checking if all permission are included");
     for id in permission_ids {
         if !all_permissions.iter().any(|p| p.id == id) {
             return Ok(false);

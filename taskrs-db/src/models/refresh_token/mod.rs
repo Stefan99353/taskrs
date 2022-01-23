@@ -69,11 +69,13 @@ impl ActiveModelBehavior for ActiveModel {
 
         // Inserted timestamp
         if let (&sea_orm::ActiveValue::NotSet, true) = (&self.inserted_at, insert) {
+            trace!("Setting inserted_at timestamp for refresh_token");
             self.inserted_at = sea_orm::ActiveValue::Set(Some(timestamp));
         }
 
         // Updated timestamp
         if let sea_orm::ActiveValue::NotSet = self.updated_at {
+            trace!("Setting updated_at timestamp for refresh_token");
             self.updated_at = sea_orm::ActiveValue::Set(Some(timestamp));
         }
 

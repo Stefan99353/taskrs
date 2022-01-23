@@ -58,6 +58,7 @@ impl ActiveModelBehavior for ActiveModel {
 
         // Inserted timestamp
         if let (&sea_orm::ActiveValue::NotSet, true) = (&self.inserted_at, insert) {
+            trace!("Setting inserted_at timestamp for user_permission");
             self.inserted_at = sea_orm::ActiveValue::Set(Some(timestamp));
         }
 
