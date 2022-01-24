@@ -52,6 +52,7 @@ impl TryFrom<UserCreate> for crate::models::user::ActiveModel {
             ..Default::default()
         };
 
+        trace!("Hashing password");
         let password_hash = hash_password(&dto.password)?;
         active_model.password_hash = ActiveValue::Set(password_hash);
 
@@ -92,6 +93,7 @@ impl TryFrom<UserUpdate> for crate::models::user::ActiveModel {
             active_model.email = ActiveValue::Set(email);
         }
         if let Some(password) = dto.password {
+            debug!("Hashing password");
             let password_hash = hash_password(&password)?;
             active_model.password_hash = ActiveValue::Set(password_hash);
         }

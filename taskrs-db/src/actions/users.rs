@@ -7,6 +7,16 @@ use sea_orm::sea_query::SimpleExpr;
 use sea_orm::{Condition, Order, QueryOrder};
 
 /// Gets all users from database
+#[instrument(
+    name = "get_all_users"
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        condition = tracing::field::debug(&condition),
+        order = tracing::field::debug(&order),
+    )
+)]
 pub async fn get_all(
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
@@ -15,15 +25,18 @@ pub async fn get_all(
     let mut query = user::Entity::find();
 
     if let Some(condition) = condition {
+        trace!("Apply condition to query");
         query = query.filter(condition);
     }
 
     if let Some(order) = order {
+        trace!("Apply order to query");
         for (ord, col) in order {
             query = query.order_by(col, ord);
         }
     }
 
+    debug!("Executing query");
     query
         .all(db)
         .await
@@ -31,6 +44,18 @@ pub async fn get_all(
 }
 
 /// Gets all users from database in a paginated form
+#[instrument(
+    name = "get_paginated_users"
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        page = page,
+        limit = limit,
+        condition = tracing::field::debug(&condition),
+        order = tracing::field::debug(&order),
+    )
+)]
 pub async fn get_paginated(
     page: usize,
     limit: usize,
@@ -41,15 +66,18 @@ pub async fn get_paginated(
     let mut query = user::Entity::find();
 
     if let Some(condition) = condition {
+        trace!("Apply condition to query");
         query = query.filter(condition);
     }
 
     if let Some(order) = order {
+        trace!("Apply order to query");
         for (ord, col) in order {
             query = query.order_by(col, ord);
         }
     }
 
+    debug!("Executing query and getting count of items");
     let paginator = query.paginate(db, limit);
     let (models, count) = try_join!(paginator.fetch_page(page), paginator.num_items())?;
 
@@ -57,6 +85,16 @@ pub async fn get_paginated(
 }
 
 /// Gets a single user from the database using an ID and/or a condition
+#[instrument(
+    name = "get_user"
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        id = tracing::field::debug(id),
+        condition = tracing::field::debug(&condition),
+    )
+)]
 pub async fn get(
     id: Option<i32>,
     condition: Option<Condition>,
@@ -69,14 +107,26 @@ pub async fn get(
     };
 
     if let Some(condition) = condition {
+        trace!("Apply condition to query");
         query = query.filter(condition);
     }
 
+    debug!("Executing query");
     query.one(db).await.map(|opt| opt.map(|model| model.into()))
 }
 
 /// Check if a email is already in use
+#[instrument(
+    name = "check_user_email_exists"
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        email = email
+    )
+)]
 pub async fn check_email_exists(email: &str, db: &DbConn) -> Result<bool, DbErr> {
+    debug!("Checking if user exists with email");
     user::Entity::find()
         .filter(user::Column::Email.eq(email))
         .one(db)
@@ -85,6 +135,12 @@ pub async fn check_email_exists(email: &str, db: &DbConn) -> Result<bool, DbErr>
 }
 
 /// Creates a new user and checks if the email is unique
+#[instrument(
+    name = "create_user"
+    level = "debug",
+    skip_all,
+    err,
+)]
 pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserError> {
     let exists = check_email_exists(&user.email, db)
         .await
@@ -94,6 +150,7 @@ pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserErro
     }
 
     let active_model: user::ActiveModel = user.try_into().map_err(AlterUserError::Argon)?;
+    debug!("Inserting new user");
     active_model
         .insert(db)
         .await
@@ -102,6 +159,15 @@ pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserErro
 }
 
 /// Updates a user and checks if the email is unique
+#[instrument(
+    name = "update_user"
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        id = user.id
+    )
+)]
 pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserError> {
     if let Some(email) = &user.email {
         let exists = check_email_exists(email, db)
@@ -113,6 +179,7 @@ pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserErro
     }
 
     let active_model: user::ActiveModel = user.try_into().map_err(AlterUserError::Argon)?;
+    debug!("Updating permission");
     active_model
         .update(db)
         .await
@@ -121,20 +188,33 @@ pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserErro
 }
 
 /// Deletes a user
+#[instrument(
+    name = "delete_users"
+    level = "debug",
+    skip_all,
+    err,
+    fields (
+        id = tracing::field::debug(id),
+        condition = tracing::field::debug(&condition),
+    )
+)]
 pub async fn delete(
     id: Option<i32>,
     condition: Option<Condition>,
     db: &DbConn,
 ) -> Result<u64, DbErr> {
-    let mut query = if let Some(id) = id {
-        user::Entity::delete_many().filter(user::Column::Id.eq(id))
-    } else {
-        user::Entity::delete_many()
-    };
+    let mut query = user::Entity::delete_many();
+
+    if let Some(id) = id {
+        trace!("Filter for ID");
+        query = query.filter(user::Column::Id.eq(id))
+    }
 
     if let Some(condition) = condition {
+        trace!("Apply condition to query");
         query = query.filter(condition);
     }
 
+    debug!("Executing query");
     query.exec(db).await.map(|res| res.rows_affected)
 }
