@@ -58,7 +58,6 @@ impl ConnectionBuilder {
         name = "database_connect",
         level = "debug",
         skip(self),
-        err,
         fields(url = %self.url, min_connections, max_connections, connect_timeout, idle_timeout)
     )]
     pub async fn connect(self) -> Result<DatabaseConnection, DbErr> {

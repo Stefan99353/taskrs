@@ -3,24 +3,26 @@ use crate::models::permission::dtos::{Permission, PermissionCreate, PermissionUp
 use futures::try_join;
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{Condition, Order, QueryOrder};
+use sea_orm::{Condition, ConnectionTrait, Order, QueryOrder};
 
 /// Gets all permissions from database
 #[instrument(
     name = "get_all_permissions"
     level = "debug",
     skip_all,
-    err,
     fields (
         condition = tracing::field::debug(&condition),
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_all(
+pub async fn get_all<'a, C>(
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<Vec<Permission>, DbErr> {
+    db: &'a C,
+) -> Result<Vec<Permission>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = permission::Entity::find();
 
     if let Some(condition) = condition {
@@ -47,7 +49,6 @@ pub async fn get_all(
     name = "get_paginated_permissions"
     level = "debug",
     skip_all,
-    err,
     fields (
         page = page,
         limit = limit,
@@ -55,13 +56,16 @@ pub async fn get_all(
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_paginated(
+pub async fn get_paginated<'a, C>(
     page: usize,
     limit: usize,
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<(Vec<Permission>, usize), DbErr> {
+    db: &'a C,
+) -> Result<(Vec<Permission>, usize), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = permission::Entity::find();
 
     if let Some(condition) = condition {
@@ -88,17 +92,19 @@ pub async fn get_paginated(
     name = "get_permission"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn get(
+pub async fn get<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<Option<Permission>, DbErr> {
+    db: &C,
+) -> Result<Option<Permission>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = if let Some(id) = id {
         permission::Entity::find_by_id(id)
     } else {
@@ -119,9 +125,11 @@ pub async fn get(
     name = "create_permission"
     level = "debug",
     skip_all,
-    err,
 )]
-pub async fn create(permission: PermissionCreate, db: &DbConn) -> Result<Permission, DbErr> {
+pub async fn create<'a, C>(permission: PermissionCreate, db: &'a C) -> Result<Permission, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let active_model: permission::ActiveModel = permission.into();
     debug!("Inserting new permission");
     active_model.insert(db).await.map(|model| model.into())
@@ -132,12 +140,14 @@ pub async fn create(permission: PermissionCreate, db: &DbConn) -> Result<Permiss
     name = "update_permission"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = permission.id
     )
 )]
-pub async fn update(permission: PermissionUpdate, db: &DbConn) -> Result<Permission, DbErr> {
+pub async fn update<'a, C>(permission: PermissionUpdate, db: &'a C) -> Result<Permission, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let active_model: permission::ActiveModel = permission.into();
     debug!("Updating permission");
     active_model.insert(db).await.map(|model| model.into())
@@ -148,17 +158,19 @@ pub async fn update(permission: PermissionUpdate, db: &DbConn) -> Result<Permiss
     name = "delete_permissions"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn delete(
+pub async fn delete<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<u64, DbErr> {
+    db: &'a C,
+) -> Result<u64, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = permission::Entity::delete_many();
 
     if let Some(id) = id {

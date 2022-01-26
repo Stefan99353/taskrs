@@ -13,17 +13,19 @@ use std::collections::HashSet;
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         permission_ids = tracing::field::debug(&permission_ids),
     )
 )]
-pub async fn grant_user_permissions(
+pub async fn grant_user_permissions<'a, C>(
     user_id: i32,
     permission_ids: Vec<i32>,
-    db: &DbConn,
-) -> Result<(), DbErr> {
+    db: &'a C,
+) -> Result<(), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // Get permission ids of user
     debug!("Get current permissions of user");
     let old_permission_ids: HashSet<i32> = user_permission::Entity::find()
@@ -61,17 +63,19 @@ pub async fn grant_user_permissions(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         permission_ids = tracing::field::debug(&permission_ids),
     )
 )]
-pub async fn revoke_user_permissions(
+pub async fn revoke_user_permissions<'a, C>(
     user_id: i32,
     permission_ids: Vec<i32>,
-    db: &DbConn,
-) -> Result<(), DbErr> {
+    db: &'a C,
+) -> Result<(), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // Delete permissions of user
     debug!("Removing permissions");
     user_permission::Entity::delete_many()
@@ -84,10 +88,10 @@ pub async fn revoke_user_permissions(
 }
 
 /// Set permissions for user.
+/// Cannot be used in a transaction, as this action uses a transaction itself
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         permission_ids = tracing::field::debug(&permission_ids),
@@ -138,17 +142,19 @@ pub async fn set_user_permissions(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         role_id = role_id,
         permission_ids = tracing::field::debug(&permission_ids),
     )
 )]
-pub async fn grant_role_permissions(
+pub async fn grant_role_permissions<'a, C>(
     role_id: i32,
     permission_ids: Vec<i32>,
-    db: &DbConn,
-) -> Result<(), DbErr> {
+    db: &'a C,
+) -> Result<(), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // Get permission ids of role
     debug!("Get current permissions of role");
     let old_permission_ids: HashSet<i32> = role_permission::Entity::find()
@@ -186,17 +192,19 @@ pub async fn grant_role_permissions(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         role_id = role_id,
         permission_ids = tracing::field::debug(&permission_ids),
     )
 )]
-pub async fn revoke_role_permissions(
+pub async fn revoke_role_permissions<'a, C>(
     role_id: i32,
     permission_ids: Vec<i32>,
-    db: &DbConn,
-) -> Result<(), DbErr> {
+    db: &'a C,
+) -> Result<(), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // Delete permissions of role
     debug!("Removing permissions");
     role_permission::Entity::delete_many()
@@ -209,10 +217,10 @@ pub async fn revoke_role_permissions(
 }
 
 /// Set permissions for role.
+/// Cannot be used in a transaction, as this action uses a transaction itself
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         role_id = role_id,
         permission_ids = tracing::field::debug(&permission_ids),
@@ -263,13 +271,15 @@ pub async fn set_role_permissions(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         role_ids = tracing::field::debug(&role_ids),
     )
 )]
-pub async fn add_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Result<(), DbErr> {
+pub async fn add_user_roles<'a, C>(user_id: i32, role_ids: Vec<i32>, db: &'a C) -> Result<(), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // Get role ids of user
     debug!("Get current roles of user");
     let old_role_ids: HashSet<i32> = user_role::Entity::find()
@@ -307,13 +317,19 @@ pub async fn add_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Re
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         role_ids = tracing::field::debug(&role_ids),
     )
 )]
-pub async fn remove_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) -> Result<(), DbErr> {
+pub async fn remove_user_roles<'a, C>(
+    user_id: i32,
+    role_ids: Vec<i32>,
+    db: &'a C,
+) -> Result<(), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // Delete roles of user
     debug!("Removing roles");
     user_role::Entity::delete_many()
@@ -326,10 +342,10 @@ pub async fn remove_user_roles(user_id: i32, role_ids: Vec<i32>, db: &DbConn) ->
 }
 
 /// Set roles for user.
+/// Cannot be used in a transaction, as this action uses a transaction itself
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         role_ids = tracing::field::debug(&role_ids),
@@ -380,12 +396,17 @@ pub async fn set_user_roles(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
     )
 )]
-pub async fn get_permissions_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Permission>, DbErr> {
+pub async fn get_permissions_of_user<'a, C>(
+    user_id: i32,
+    db: &'a C,
+) -> Result<Vec<Permission>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     debug!("Getting all direct permissions of user");
     permission::Entity::find()
         .filter(user_permission::Column::UserId.eq(user_id))
@@ -402,12 +423,17 @@ pub async fn get_permissions_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Pe
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         role_id = role_id,
     )
 )]
-pub async fn get_permission_of_role(role_id: i32, db: &DbConn) -> Result<Vec<Permission>, DbErr> {
+pub async fn get_permission_of_role<'a, C>(
+    role_id: i32,
+    db: &'a C,
+) -> Result<Vec<Permission>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     debug!("Getting all permissions of role");
     permission::Entity::find()
         .filter(role_permission::Column::RoleId.eq(role_id))
@@ -424,12 +450,14 @@ pub async fn get_permission_of_role(role_id: i32, db: &DbConn) -> Result<Vec<Per
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
     )
 )]
-pub async fn get_roles_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Role>, DbErr> {
+pub async fn get_roles_of_user<'a, C>(user_id: i32, db: &'a C) -> Result<Vec<Role>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     debug!("Getting all roles of user");
     role::Entity::find()
         .filter(user_role::Column::UserId.eq(user_id))
@@ -443,15 +471,17 @@ pub async fn get_roles_of_user(user_id: i32, db: &DbConn) -> Result<Vec<Role>, D
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
     )
 )]
-pub async fn get_all_permission_of_user(
+pub async fn get_all_permission_of_user<'a, C>(
     user_id: i32,
-    db: &DbConn,
-) -> Result<Vec<Permission>, DbErr> {
+    db: &'a C,
+) -> Result<Vec<Permission>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     // SELECT *
     //     FROM permissions
     // WHERE id IN (
@@ -523,17 +553,19 @@ pub async fn get_all_permission_of_user(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         permission_id = permission_id,
     )
 )]
-pub async fn has_one_permission(
+pub async fn has_one_permission<'a, C>(
     user_id: i32,
     permission_id: i32,
-    db: &DbConn,
-) -> Result<bool, DbErr> {
+    db: &'a C,
+) -> Result<bool, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let all_permissions = get_all_permission_of_user(user_id, db).await;
 
     debug!("Checking if permission is included");
@@ -544,17 +576,19 @@ pub async fn has_one_permission(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         permission_ids = tracing::field::debug(&permission_ids),
     )
 )]
-pub async fn has_any_permission(
+pub async fn has_any_permission<'a, C>(
     user_id: i32,
     permission_ids: Vec<i32>,
-    db: &DbConn,
-) -> Result<bool, DbErr> {
+    db: &'a C,
+) -> Result<bool, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let all_permissions = get_all_permission_of_user(user_id, db).await?;
 
     debug!("Checking if one permission is included");
@@ -571,17 +605,19 @@ pub async fn has_any_permission(
 #[instrument(
     level = "debug",
     skip_all,
-    err,
     fields (
         user_id = user_id,
         permission_ids = tracing::field::debug(&permission_ids),
     )
 )]
-pub async fn has_all_permissions(
+pub async fn has_all_permissions<'a, C>(
     user_id: i32,
     permission_ids: Vec<i32>,
-    db: &DbConn,
-) -> Result<bool, DbErr> {
+    db: &'a C,
+) -> Result<bool, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let all_permissions = get_all_permission_of_user(user_id, db).await?;
 
     debug!("Checking if all permission are included");

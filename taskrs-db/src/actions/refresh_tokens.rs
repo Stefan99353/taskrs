@@ -10,7 +10,6 @@ use sea_orm::{Condition, DbConn, DbErr, Order, QueryOrder};
     name = "get_all_refresh_tokens"
     level = "debug",
     skip_all,
-    err,
     fields (
         condition = tracing::field::debug(&condition),
         order = tracing::field::debug(&order),
@@ -47,7 +46,6 @@ pub async fn get_all(
     name = "get_paginated_refresh_tokens"
     level = "debug",
     skip_all,
-    err,
     fields (
         page = page,
         limit = limit,
@@ -88,7 +86,6 @@ pub async fn get_paginated(
     name = "get_refresh_token"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),
@@ -119,7 +116,6 @@ pub async fn get(
     name = "create_refresh_token"
     level = "debug",
     skip_all,
-    err,
 )]
 pub async fn create(refresh_token: RefreshTokenCreate, db: &DbConn) -> Result<RefreshToken, DbErr> {
     let active_model: refresh_token::ActiveModel = refresh_token.into();
@@ -132,7 +128,6 @@ pub async fn create(refresh_token: RefreshTokenCreate, db: &DbConn) -> Result<Re
     name = "update_refresh_token"
     level = "debug",
     skip_all,
-    err,
     fields (
     id = refresh_token.id
     )
@@ -148,7 +143,6 @@ pub async fn update(refresh_token: RefreshTokenUpdate, db: &DbConn) -> Result<Re
     name = "delete_refresh_tokens"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),

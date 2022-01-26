@@ -10,7 +10,6 @@ use sea_orm::{Condition, Order, QueryOrder};
     name = "get_all_roles"
     level = "debug",
     skip_all,
-    err,
     fields (
         condition = tracing::field::debug(&condition),
         order = tracing::field::debug(&order),
@@ -47,7 +46,6 @@ pub async fn get_all(
     name = "get_paginated_roles"
     level = "debug",
     skip_all,
-    err,
     fields (
         page = page,
         limit = limit,
@@ -88,7 +86,6 @@ pub async fn get_paginated(
     name = "get_role"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),
@@ -119,7 +116,6 @@ pub async fn get(
     name = "create_role"
     level = "debug",
     skip_all,
-    err,
 )]
 pub async fn create(role: RoleCreate, db: &DbConn) -> Result<Role, DbErr> {
     let active_model: role::ActiveModel = role.into();
@@ -132,7 +128,6 @@ pub async fn create(role: RoleCreate, db: &DbConn) -> Result<Role, DbErr> {
     name = "update_role"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = role.id
     )
@@ -148,7 +143,6 @@ pub async fn update(role: RoleUpdate, db: &DbConn) -> Result<Role, DbErr> {
     name = "delete_roles"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),

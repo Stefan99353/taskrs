@@ -33,13 +33,7 @@ impl Migrations {
     }
 
     /// Runs the migrations. If a target is present, tries to update database to that specific migration.
-    #[instrument(
-        name = "migrations_run",
-        level = "debug",
-        skip_all,
-        err,
-        fields(target)
-    )]
+    #[instrument(name = "migrations_run", level = "debug", skip_all, fields(target))]
     pub async fn run(self, db: &DbConn) -> Result<(), MigrationError> {
         debug!("Creating migrations table if it does not exist");
         create_migrations_table(db)
@@ -184,7 +178,6 @@ pub trait Migration: Sync {
         name = "migration_up",
         level = "debug",
         skip_all,
-        err,
         fields(
             name = %self.name(),
             order = self.order(),
@@ -238,7 +231,6 @@ pub trait Migration: Sync {
         name = "migration_down",
         level = "debug",
         skip_all,
-        err,
         fields(
             name = %self.name(),
         )

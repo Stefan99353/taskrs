@@ -11,7 +11,6 @@ use sea_orm::{Condition, Order, QueryOrder};
     name = "get_all_users"
     level = "debug",
     skip_all,
-    err,
     fields (
         condition = tracing::field::debug(&condition),
         order = tracing::field::debug(&order),
@@ -48,7 +47,6 @@ pub async fn get_all(
     name = "get_paginated_users"
     level = "debug",
     skip_all,
-    err,
     fields (
         page = page,
         limit = limit,
@@ -89,7 +87,6 @@ pub async fn get_paginated(
     name = "get_user"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),
@@ -120,7 +117,6 @@ pub async fn get(
     name = "check_user_email_exists"
     level = "debug",
     skip_all,
-    err,
     fields (
         email = email
     )
@@ -139,7 +135,6 @@ pub async fn check_email_exists(email: &str, db: &DbConn) -> Result<bool, DbErr>
     name = "create_user"
     level = "debug",
     skip_all,
-    err,
 )]
 pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserError> {
     let exists = check_email_exists(&user.email, db)
@@ -163,7 +158,6 @@ pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserErro
     name = "update_user"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = user.id
     )
@@ -192,7 +186,6 @@ pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserErro
     name = "delete_users"
     level = "debug",
     skip_all,
-    err,
     fields (
         id = tracing::field::debug(id),
         condition = tracing::field::debug(&condition),
