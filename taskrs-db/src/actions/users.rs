@@ -4,7 +4,7 @@ use crate::models::user::dtos::{User, UserCreate, UserUpdate};
 use futures::try_join;
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{Condition, Order, QueryOrder};
+use sea_orm::{Condition, ConnectionTrait, Order, QueryOrder};
 
 /// Gets all users from database
 #[instrument(
@@ -16,11 +16,14 @@ use sea_orm::{Condition, Order, QueryOrder};
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_all(
+pub async fn get_all<'a, C>(
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<Vec<User>, DbErr> {
+    db: &'a C,
+) -> Result<Vec<User>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = user::Entity::find();
 
     if let Some(condition) = condition {
@@ -54,13 +57,16 @@ pub async fn get_all(
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_paginated(
+pub async fn get_paginated<'a, C>(
     page: usize,
     limit: usize,
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<(Vec<User>, usize), DbErr> {
+    db: &'a C,
+) -> Result<(Vec<User>, usize), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = user::Entity::find();
 
     if let Some(condition) = condition {
@@ -92,11 +98,14 @@ pub async fn get_paginated(
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn get(
+pub async fn get<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<Option<User>, DbErr> {
+    db: &'a C,
+) -> Result<Option<User>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = if let Some(id) = id {
         user::Entity::find_by_id(id)
     } else {
@@ -121,7 +130,10 @@ pub async fn get(
         email = email
     )
 )]
-pub async fn check_email_exists(email: &str, db: &DbConn) -> Result<bool, DbErr> {
+pub async fn check_email_exists<'a, C>(email: &str, db: &'a C) -> Result<bool, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     debug!("Checking if user exists with email");
     user::Entity::find()
         .filter(user::Column::Email.eq(email))
@@ -136,7 +148,10 @@ pub async fn check_email_exists(email: &str, db: &DbConn) -> Result<bool, DbErr>
     level = "debug",
     skip_all,
 )]
-pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserError> {
+pub async fn create<'a, C>(user: UserCreate, db: &'a C) -> Result<User, AlterUserError>
+where
+    C: ConnectionTrait<'a>,
+{
     let exists = check_email_exists(&user.email, db)
         .await
         .map_err(AlterUserError::Db)?;
@@ -153,6 +168,29 @@ pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserErro
         .map_err(AlterUserError::Db)
 }
 
+/// Create new users and returns last inserted id. Does not check if emails exist.
+#[instrument(
+name = "create_users"
+level = "debug",
+skip_all,
+)]
+pub async fn create_many<'a, C>(users: Vec<UserCreate>, db: &'a C) -> Result<i32, AlterUserError>
+where
+    C: ConnectionTrait<'a>,
+{
+    let active_models: Vec<user::ActiveModel> = users
+        .into_iter()
+        .map(|p| p.try_into().map_err(AlterUserError::Argon))
+        .collect::<Result<_, AlterUserError>>()?;
+
+    debug!("Inserting new users");
+    user::Entity::insert_many(active_models)
+        .exec(db)
+        .await
+        .map(|r| r.last_insert_id)
+        .map_err(AlterUserError::Db)
+}
+
 /// Updates a user and checks if the email is unique
 #[instrument(
     name = "update_user"
@@ -162,7 +200,10 @@ pub async fn create(user: UserCreate, db: &DbConn) -> Result<User, AlterUserErro
         id = user.id
     )
 )]
-pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserError> {
+pub async fn update<'a, C>(user: UserUpdate, db: &'a C) -> Result<User, AlterUserError>
+where
+    C: ConnectionTrait<'a>,
+{
     if let Some(email) = &user.email {
         let exists = check_email_exists(email, db)
             .await
@@ -191,11 +232,14 @@ pub async fn update(user: UserUpdate, db: &DbConn) -> Result<User, AlterUserErro
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn delete(
+pub async fn delete<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<u64, DbErr> {
+    db: &'a C,
+) -> Result<u64, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = user::Entity::delete_many();
 
     if let Some(id) = id {

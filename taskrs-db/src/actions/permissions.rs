@@ -122,9 +122,9 @@ where
 
 /// Creates a new permission
 #[instrument(
-    name = "create_permission"
-    level = "debug",
-    skip_all,
+name = "create_permission"
+level = "debug",
+skip_all,
 )]
 pub async fn create<'a, C>(permission: PermissionCreate, db: &'a C) -> Result<Permission, DbErr>
 where
@@ -133,6 +133,26 @@ where
     let active_model: permission::ActiveModel = permission.into();
     debug!("Inserting new permission");
     active_model.insert(db).await.map(|model| model.into())
+}
+
+/// Create new permissions and returns last inserted id
+#[instrument(
+name = "create_permissions"
+level = "debug",
+skip_all,
+)]
+pub async fn create_many<'a, C>(permissions: Vec<PermissionCreate>, db: &'a C) -> Result<i32, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
+    let active_models: Vec<permission::ActiveModel> =
+        permissions.into_iter().map(|p| p.into()).collect();
+
+    debug!("Inserting new permissions");
+    permission::Entity::insert_many(active_models)
+        .exec(db)
+        .await
+        .map(|r| r.last_insert_id)
 }
 
 /// Updates a permission

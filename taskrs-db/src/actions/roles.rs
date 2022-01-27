@@ -3,7 +3,7 @@ use crate::models::role::dtos::{Role, RoleCreate, RoleUpdate};
 use futures::try_join;
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{Condition, Order, QueryOrder};
+use sea_orm::{Condition, ConnectionTrait, Order, QueryOrder};
 
 /// Gets all roles from database
 #[instrument(
@@ -15,11 +15,14 @@ use sea_orm::{Condition, Order, QueryOrder};
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_all(
+pub async fn get_all<'a, C>(
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<Vec<Role>, DbErr> {
+    db: &'a C,
+) -> Result<Vec<Role>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = role::Entity::find();
 
     if let Some(condition) = condition {
@@ -53,13 +56,16 @@ pub async fn get_all(
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_paginated(
+pub async fn get_paginated<'a, C>(
     page: usize,
     limit: usize,
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<(Vec<Role>, usize), DbErr> {
+    db: &'a C,
+) -> Result<(Vec<Role>, usize), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = role::Entity::find();
 
     if let Some(condition) = condition {
@@ -91,11 +97,14 @@ pub async fn get_paginated(
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn get(
+pub async fn get<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<Option<Role>, DbErr> {
+    db: &'a C,
+) -> Result<Option<Role>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = if let Some(id) = id {
         role::Entity::find_by_id(id)
     } else {
@@ -117,10 +126,32 @@ pub async fn get(
     level = "debug",
     skip_all,
 )]
-pub async fn create(role: RoleCreate, db: &DbConn) -> Result<Role, DbErr> {
+pub async fn create<'a, C>(role: RoleCreate, db: &'a C) -> Result<Role, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let active_model: role::ActiveModel = role.into();
     debug!("Inserting new permission");
     active_model.insert(db).await.map(|model| model.into())
+}
+
+/// Create new roles and returns last inserted id
+#[instrument(
+name = "create_roles"
+level = "debug",
+skip_all,
+)]
+pub async fn create_many<'a, C>(roles: Vec<RoleCreate>, db: &'a C) -> Result<i32, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
+    let active_models: Vec<role::ActiveModel> = roles.into_iter().map(|p| p.into()).collect();
+
+    debug!("Inserting new roles");
+    role::Entity::insert_many(active_models)
+        .exec(db)
+        .await
+        .map(|r| r.last_insert_id)
 }
 
 /// Updates a role
@@ -132,7 +163,10 @@ pub async fn create(role: RoleCreate, db: &DbConn) -> Result<Role, DbErr> {
         id = role.id
     )
 )]
-pub async fn update(role: RoleUpdate, db: &DbConn) -> Result<Role, DbErr> {
+pub async fn update<'a, C>(role: RoleUpdate, db: &'a C) -> Result<Role, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let active_model: role::ActiveModel = role.into();
     debug!("Updating permission");
     active_model.insert(db).await.map(|model| model.into())
@@ -148,11 +182,14 @@ pub async fn update(role: RoleUpdate, db: &DbConn) -> Result<Role, DbErr> {
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn delete(
+pub async fn delete<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<u64, DbErr> {
+    db: &'a C,
+) -> Result<u64, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = role::Entity::delete_many();
 
     if let Some(id) = id {
