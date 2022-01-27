@@ -2326,6 +2326,7 @@ dependencies = [
  "build_const",
  "config",
  "dotenv",
+ "futures",
  "glob",
  "http-body",
  "hyper",

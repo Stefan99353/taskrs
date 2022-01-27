@@ -1,5 +1,7 @@
 use crate::config::{Config, DatabaseConfig};
-use crate::seeding::seed_permissions;
+use crate::seeding::{
+    seed_permissions, seed_root_role, seed_root_role_permissions, seed_root_user,
+};
 use axum::routing::IntoMakeService;
 use axum::{Router, Server};
 use http_body::combinators::UnsyncBoxBody;
@@ -118,7 +120,7 @@ async fn get_database_connection(database_config: &DatabaseConfig) -> DbConn {
     })
 }
 
-async fn setup_database(_config: &Config, db: &DbConn) {
+async fn setup_database(config: &Config, db: &DbConn) {
     // Migrations
     let migrations = taskrs_db::migrations::Migrations::new(None);
     migrations.run(db).await.unwrap_or_else(|err| {
@@ -129,6 +131,32 @@ async fn setup_database(_config: &Config, db: &DbConn) {
 
     // Seeding permissions
     seed_permissions(db).await;
+
+    // Seed root role and its permissions
+    let role = seed_root_role(db).await;
+    seed_root_role_permissions(role.id, db).await;
+
+    // Seed root user
+    if config.seeding.seed_root_user {
+        let root_user = seed_root_user(
+            config.seeding.root_user_email.clone(),
+            config.seeding.root_user_password.clone(),
+            config.seeding.root_user_first_name.clone(),
+            config.seeding.root_user_last_name.clone(),
+            db,
+        )
+        .await;
+
+        // Grant root role
+        if config.seeding.grant_root_role {
+            taskrs_db::actions::access_control::add_user_roles(root_user.id, vec![role.id], db)
+                .await
+                .unwrap_or_else(|err| {
+                    error!("Database error while granting root role: {}", err);
+                    panic!();
+                });
+        }
+    }
 }
 
 fn content_length_from_response(

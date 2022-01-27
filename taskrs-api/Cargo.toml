@@ -7,6 +7,7 @@ edition = "2021"
 config = { version = "0.11.0", features = ["toml", "json", "hjson", "yaml", "ini"] }
 build_const = "0.2.2"
 dotenv = "0.15.0"
+futures = "0.3.19"
 http-body = "0.4.4"
 hyper = "0.14.16"
 serde = { version = "1.0.135", features = ["derive"] }

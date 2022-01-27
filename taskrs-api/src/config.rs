@@ -3,6 +3,7 @@ use std::net::IpAddr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
+    pub seeding: SeedingConfig,
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub logs: LogConfig,
@@ -38,6 +39,16 @@ impl Config {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SeedingConfig {
+    pub root_user_email: String,
+    pub root_user_password: String,
+    pub root_user_first_name: Option<String>,
+    pub root_user_last_name: Option<String>,
+    pub seed_root_user: bool,
+    pub grant_root_role: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ServerConfig {
     pub bind_address: IpAddr,
     pub bind_port: u16,
@@ -65,9 +76,23 @@ pub struct LogConfig {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            seeding: SeedingConfig::default(),
             server: ServerConfig::default(),
             database: DatabaseConfig::default(),
             logs: LogConfig::default(),
+        }
+    }
+}
+
+impl Default for SeedingConfig {
+    fn default() -> Self {
+        Self {
+            root_user_email: "root@taskrs.com".to_string(),
+            root_user_password: "root".to_string(),
+            root_user_first_name: None,
+            root_user_last_name: None,
+            seed_root_user: true,
+            grant_root_role: true,
         }
     }
 }
