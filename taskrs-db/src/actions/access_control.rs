@@ -41,20 +41,23 @@ where
     // Get difference and create active models for inserting
     trace!("Filter out permissions the user already has");
     let new_permission_ids: HashSet<i32> = permission_ids.into_iter().collect();
-    let active_models =
-        (&new_permission_ids - &old_permission_ids)
-            .into_iter()
-            .map(|permission_id| user_permission::ActiveModel {
-                user_id: ActiveValue::Set(user_id),
-                permission_id: ActiveValue::Set(permission_id),
-                ..Default::default()
-            });
+    let active_models: Vec<user_permission::ActiveModel> = (&new_permission_ids
+        - &old_permission_ids)
+        .into_iter()
+        .map(|permission_id| user_permission::ActiveModel {
+            user_id: ActiveValue::Set(user_id),
+            permission_id: ActiveValue::Set(permission_id),
+            ..Default::default()
+        })
+        .collect();
 
     // Insert models
     debug!("Inserting new permissions");
-    user_permission::Entity::insert_many(active_models)
-        .exec(db)
-        .await?;
+    if !active_models.is_empty() {
+        user_permission::Entity::insert_many(active_models)
+            .exec(db)
+            .await?;
+    }
 
     Ok(())
 }
@@ -127,9 +130,11 @@ pub async fn set_user_permissions(
 
             // Insert new permissions
             debug!("Inserting new permissions for user");
-            user_permission::Entity::insert_many(active_models)
-                .exec(txn)
-                .await?;
+            if !active_models.is_empty() {
+                user_permission::Entity::insert_many(active_models)
+                    .exec(txn)
+                    .await?;
+            }
 
             debug!("Setting permissions successful");
             Ok(())
@@ -170,20 +175,23 @@ where
     // Get difference and create active models for inserting
     trace!("Filter out permissions the role already has");
     let new_permission_ids: HashSet<i32> = permission_ids.into_iter().collect();
-    let active_models =
-        (&new_permission_ids - &old_permission_ids)
-            .into_iter()
-            .map(|permission_id| role_permission::ActiveModel {
-                role_id: ActiveValue::Set(role_id),
-                permission_id: ActiveValue::Set(permission_id),
-                ..Default::default()
-            });
+    let active_models: Vec<role_permission::ActiveModel> = (&new_permission_ids
+        - &old_permission_ids)
+        .into_iter()
+        .map(|permission_id| role_permission::ActiveModel {
+            role_id: ActiveValue::Set(role_id),
+            permission_id: ActiveValue::Set(permission_id),
+            ..Default::default()
+        })
+        .collect();
 
     // Insert models
     debug!("Inserting new permissions");
-    role_permission::Entity::insert_many(active_models)
-        .exec(db)
-        .await?;
+    if !active_models.is_empty() {
+        role_permission::Entity::insert_many(active_models)
+            .exec(db)
+            .await?;
+    }
 
     Ok(())
 }
@@ -256,9 +264,11 @@ pub async fn set_role_permissions(
 
             // Insert new permissions
             debug!("Inserting new permissions for role");
-            role_permission::Entity::insert_many(active_models)
-                .exec(txn)
-                .await?;
+            if !active_models.is_empty() {
+                role_permission::Entity::insert_many(active_models)
+                    .exec(txn)
+                    .await?;
+            }
 
             debug!("Setting permissions successful");
             Ok(())
@@ -295,20 +305,22 @@ where
     // Get difference and create active models for inserting
     trace!("Filter out roles the user already has");
     let new_role_ids: HashSet<i32> = role_ids.into_iter().collect();
-    let active_models =
-        (&new_role_ids - &old_role_ids)
-            .into_iter()
-            .map(|role_id| user_role::ActiveModel {
-                user_id: ActiveValue::Set(user_id),
-                role_id: ActiveValue::Set(role_id),
-                ..Default::default()
-            });
+    let active_models: Vec<user_role::ActiveModel> = (&new_role_ids - &old_role_ids)
+        .into_iter()
+        .map(|role_id| user_role::ActiveModel {
+            user_id: ActiveValue::Set(user_id),
+            role_id: ActiveValue::Set(role_id),
+            ..Default::default()
+        })
+        .collect();
 
     // Insert models
     debug!("Inserting new roles");
-    user_role::Entity::insert_many(active_models)
-        .exec(db)
-        .await?;
+    if !active_models.is_empty() {
+        user_role::Entity::insert_many(active_models)
+            .exec(db)
+            .await?;
+    }
 
     Ok(())
 }
@@ -381,9 +393,11 @@ pub async fn set_user_roles(
 
             // Insert new roles
             debug!("Inserting new permissions for role");
-            user_role::Entity::insert_many(active_models)
-                .exec(txn)
-                .await?;
+            if !active_models.is_empty() {
+                user_role::Entity::insert_many(active_models)
+                    .exec(txn)
+                    .await?;
+            }
 
             debug!("Setting roles successful");
             Ok(())

@@ -3,7 +3,7 @@ use crate::models::refresh_token::dtos::{RefreshToken, RefreshTokenCreate, Refre
 use futures::try_join;
 use sea_orm::prelude::*;
 use sea_orm::sea_query::SimpleExpr;
-use sea_orm::{Condition, DbConn, DbErr, Order, QueryOrder};
+use sea_orm::{Condition, ConnectionTrait, DbErr, Order, QueryOrder};
 
 /// Gets all refresh tokens from database
 #[instrument(
@@ -15,11 +15,14 @@ use sea_orm::{Condition, DbConn, DbErr, Order, QueryOrder};
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_all(
+pub async fn get_all<'a, C>(
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<Vec<RefreshToken>, DbErr> {
+    db: &'a C,
+) -> Result<Vec<RefreshToken>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = refresh_token::Entity::find();
 
     if let Some(condition) = condition {
@@ -53,13 +56,16 @@ pub async fn get_all(
         order = tracing::field::debug(&order),
     )
 )]
-pub async fn get_paginated(
+pub async fn get_paginated<'a, C>(
     page: usize,
     limit: usize,
     condition: Option<Condition>,
     order: Option<Vec<(Order, SimpleExpr)>>,
-    db: &DbConn,
-) -> Result<(Vec<RefreshToken>, usize), DbErr> {
+    db: &'a C,
+) -> Result<(Vec<RefreshToken>, usize), DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = refresh_token::Entity::find();
 
     if let Some(condition) = condition {
@@ -91,11 +97,14 @@ pub async fn get_paginated(
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn get(
+pub async fn get<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<Option<RefreshToken>, DbErr> {
+    db: &'a C,
+) -> Result<Option<RefreshToken>, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = if let Some(id) = id {
         refresh_token::Entity::find_by_id(id)
     } else {
@@ -117,10 +126,39 @@ pub async fn get(
     level = "debug",
     skip_all,
 )]
-pub async fn create(refresh_token: RefreshTokenCreate, db: &DbConn) -> Result<RefreshToken, DbErr> {
+pub async fn create<'a, C>(
+    refresh_token: RefreshTokenCreate,
+    db: &'a C,
+) -> Result<RefreshToken, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let active_model: refresh_token::ActiveModel = refresh_token.into();
     debug!("Inserting new permission");
     active_model.insert(db).await.map(|model| model.into())
+}
+
+/// Create new refresh tokens and returns last inserted id
+#[instrument(
+name = "create_refresh_tokens"
+level = "debug",
+skip_all,
+)]
+pub async fn create_many<'a, C>(
+    refresh_tokens: Vec<RefreshTokenCreate>,
+    db: &'a C,
+) -> Result<i32, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
+    let active_models: Vec<refresh_token::ActiveModel> =
+        refresh_tokens.into_iter().map(|rt| rt.into()).collect();
+
+    debug!("Inserting new refresh_tokens");
+    refresh_token::Entity::insert_many(active_models)
+        .exec(db)
+        .await
+        .map(|r| r.last_insert_id)
 }
 
 /// Updates a refresh token
@@ -132,7 +170,13 @@ pub async fn create(refresh_token: RefreshTokenCreate, db: &DbConn) -> Result<Re
     id = refresh_token.id
     )
 )]
-pub async fn update(refresh_token: RefreshTokenUpdate, db: &DbConn) -> Result<RefreshToken, DbErr> {
+pub async fn update<'a, C>(
+    refresh_token: RefreshTokenUpdate,
+    db: &'a C,
+) -> Result<RefreshToken, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let active_model: refresh_token::ActiveModel = refresh_token.into();
     debug!("Updating permission");
     active_model.insert(db).await.map(|model| model.into())
@@ -148,11 +192,14 @@ pub async fn update(refresh_token: RefreshTokenUpdate, db: &DbConn) -> Result<Re
         condition = tracing::field::debug(&condition),
     )
 )]
-pub async fn delete(
+pub async fn delete<'a, C>(
     id: Option<i32>,
     condition: Option<Condition>,
-    db: &DbConn,
-) -> Result<u64, DbErr> {
+    db: &'a C,
+) -> Result<u64, DbErr>
+where
+    C: ConnectionTrait<'a>,
+{
     let mut query = refresh_token::Entity::delete_many();
 
     if let Some(id) = id {
