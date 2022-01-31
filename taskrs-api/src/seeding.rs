@@ -1,5 +1,6 @@
 use crate::permissions::ALL_PERMISSIONS;
 use futures::try_join;
+use std::process::exit;
 use taskrs_db::actions::errors::AlterUserError;
 use taskrs_db::models::permission::dtos::PermissionCreate;
 use taskrs_db::models::role::dtos::{Role, RoleCreate};
@@ -15,7 +16,7 @@ pub async fn seed_permissions(db: &DbConn) {
     let json_permissions: Vec<PermissionCreate> = serde_json::from_str(ALL_PERMISSIONS)
         .unwrap_or_else(|err| {
             error!("Error while deserializing embedded permissions: {}", err);
-            panic!();
+            exit(-1);
         });
 
     db.transaction::<_, (), DbErr>(|txn| {
@@ -71,7 +72,7 @@ pub async fn seed_permissions(db: &DbConn) {
     .await
     .unwrap_or_else(|err| {
         error!("Database error while seeding permissions: {}", err);
-        panic!();
+        exit(-1);
     });
 }
 
@@ -86,7 +87,7 @@ pub async fn seed_root_role(db: &DbConn) -> Role {
     .await
     .unwrap_or_else(|err| {
         error!("Database error while getting root role: {}", err);
-        panic!();
+        exit(-1);
     });
 
     match db_role {
@@ -101,7 +102,7 @@ pub async fn seed_root_role(db: &DbConn) -> Role {
         .await
         .unwrap_or_else(|err| {
             error!("Database error while inserting root role: {}", err);
-            panic!();
+            exit(-1);
         }),
         Some(role) => role,
     }
@@ -118,7 +119,7 @@ pub async fn seed_root_role_permissions(role_id: i32, db: &DbConn) {
     let (all_permissions, role_permissions) =
         try_join!(all_permissions_future, role_permissions_future).unwrap_or_else(|err| {
             error!("Database error while getting permissions: {}", err);
-            panic!();
+            exit(-1);
         });
 
     let new_permission_ids: Vec<i32> = all_permissions
@@ -144,7 +145,7 @@ pub async fn seed_root_role_permissions(role_id: i32, db: &DbConn) {
 
     try_join!(grant_future, revoke_future).unwrap_or_else(|err| {
         error!("Database error while updating permissions: {}", err);
-        panic!();
+        exit(-1);
     });
 }
 
@@ -181,16 +182,16 @@ pub async fn seed_root_user(
             .await
             .unwrap_or_else(|err| {
                 error!("Database error while getting root user: {}", err);
-                panic!();
+                exit(-1);
             })
             .unwrap(),
             AlterUserError::Argon(err) => {
                 error!("Error while hashing password for root user: {}", err);
-                panic!();
+                exit(-1);
             }
             AlterUserError::Db(err) => {
                 error!("Database error while inserting root user: {}", err);
-                panic!();
+                exit(-1);
             }
         },
     }

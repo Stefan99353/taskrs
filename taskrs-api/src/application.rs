@@ -12,6 +12,7 @@ use hyper::server::conn::AddrIncoming;
 use hyper::Response;
 use std::iter::once;
 use std::net::SocketAddr;
+use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
 use taskrs_db::connection::ConnectionBuilder;
@@ -116,7 +117,7 @@ async fn get_database_connection(database_config: &DatabaseConfig) -> DbConn {
     builder.connect().await.unwrap_or_else(|err| {
         error!("Error while connecting to database and building connection pool.");
         error!("{}", err);
-        panic!();
+        exit(-1);
     })
 }
 
@@ -126,7 +127,7 @@ async fn setup_database(config: &Config, db: &DbConn) {
     migrations.run(db).await.unwrap_or_else(|err| {
         error!("Error while running database migrations.");
         error!("{}", err);
-        panic!();
+        exit(-1);
     });
 
     // Seeding permissions
@@ -153,7 +154,7 @@ async fn setup_database(config: &Config, db: &DbConn) {
                 .await
                 .unwrap_or_else(|err| {
                     error!("Database error while granting root role: {}", err);
-                    panic!();
+                    exit(-1);
                 });
         }
     }
