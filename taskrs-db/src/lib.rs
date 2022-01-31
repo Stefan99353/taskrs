@@ -7,4 +7,5 @@ pub mod migrations;
 pub mod models;
 pub(crate) mod utils;
 
+pub use argon2;
 pub use sea_orm;
