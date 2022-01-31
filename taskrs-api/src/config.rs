@@ -3,6 +3,7 @@ use std::net::IpAddr;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
+    pub authentication: AuthenticationConfig,
     pub seeding: SeedingConfig,
     pub server: ServerConfig,
     pub database: DatabaseConfig,
@@ -38,6 +39,38 @@ impl Config {
     }
 }
 
+#[allow(clippy::derivable_impls)]
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            authentication: AuthenticationConfig::default(),
+            seeding: SeedingConfig::default(),
+            server: ServerConfig::default(),
+            database: DatabaseConfig::default(),
+            logs: LogConfig::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AuthenticationConfig {
+    pub access_token_secret: String,
+    pub refresh_token_secret: String,
+    pub access_token_expiration_time: u32,  // Seconds
+    pub refresh_token_expiration_time: u32, // Seconds
+}
+
+impl Default for AuthenticationConfig {
+    fn default() -> Self {
+        Self {
+            access_token_secret: "access_token_secret".to_string(),
+            refresh_token_secret: "refresh_token_secret".to_string(),
+            access_token_expiration_time: 900,
+            refresh_token_expiration_time: 2592000,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SeedingConfig {
     pub root_user_email: String,
@@ -46,42 +79,6 @@ pub struct SeedingConfig {
     pub root_user_last_name: Option<String>,
     pub seed_root_user: bool,
     pub grant_root_role: bool,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ServerConfig {
-    pub bind_address: IpAddr,
-    pub bind_port: u16,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct DatabaseConfig {
-    pub url: String,
-    pub min_connections: u32,
-    pub max_connections: u32,
-    pub connect_timeout: u32, // Seconds
-    pub idle_timeout: u32,    // Seconds
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LogConfig {
-    pub log_to_file: bool,
-    pub log_to_stdout: bool,
-    pub log_dir: String,
-    pub log_prefix: String,
-    pub rust_log: String,
-}
-
-#[allow(clippy::derivable_impls)]
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            seeding: SeedingConfig::default(),
-            server: ServerConfig::default(),
-            database: DatabaseConfig::default(),
-            logs: LogConfig::default(),
-        }
-    }
 }
 
 impl Default for SeedingConfig {
@@ -97,6 +94,30 @@ impl Default for SeedingConfig {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ServerConfig {
+    pub bind_address: IpAddr,
+    pub bind_port: u16,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            bind_address: IpAddr::from([0, 0, 0, 0]),
+            bind_port: 8080,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DatabaseConfig {
+    pub url: String,
+    pub min_connections: u32,
+    pub max_connections: u32,
+    pub connect_timeout: u32, // Seconds
+    pub idle_timeout: u32,    // Seconds
+}
+
 impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {
@@ -109,13 +130,13 @@ impl Default for DatabaseConfig {
     }
 }
 
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            bind_address: IpAddr::from([0, 0, 0, 0]),
-            bind_port: 8080,
-        }
-    }
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LogConfig {
+    pub log_to_file: bool,
+    pub log_to_stdout: bool,
+    pub log_dir: String,
+    pub log_prefix: String,
+    pub rust_log: String,
 }
 
 impl Default for LogConfig {

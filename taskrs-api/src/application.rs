@@ -17,6 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use taskrs_db::connection::ConnectionBuilder;
 use taskrs_db::sea_orm::DbConn;
+use tower_cookies::CookieManagerLayer;
 use tower_http::cors::any;
 use tower_http::trace::DefaultOnResponse;
 use tower_http::{add_extension, compression, cors, sensitive_headers, set_header, trace};
@@ -92,6 +93,8 @@ fn build_server(
             CONTENT_LENGTH,
             content_length_from_response,
         ))
+        // Manager Layer for cookies
+        .layer(CookieManagerLayer::new())
         // Wrap application state for extraction
         .layer(add_extension::AddExtensionLayer::new(state))
         // Wrap database connection for extraction

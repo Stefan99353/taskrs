@@ -4,15 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = { version = "0.4.19", features = ["serde"] }
 config = { version = "0.11.0", features = ["toml", "json", "hjson", "yaml", "ini"] }
 build_const = "0.2.2"
 dotenv = "0.15.0"
 futures = "0.3.19"
 http-body = "0.4.4"
 hyper = "0.14.16"
+jsonwebtoken = "7.2.0"
 serde = { version = "1.0.135", features = ["derive"] }
 serde_json = "1.0.78"
+time = "0.2.27"
 tokio = { version = "1.15.0", features = ["full"] }
+tower-cookies = "0.4.1"
 tower-http = { version = "0.2.1", features = ["add-extension", "compression-full", "cors", "sensitive-headers", "trace", "set-header"] }
 tracing = "0.1.29"
 tracing-appender = "0.2.0"
