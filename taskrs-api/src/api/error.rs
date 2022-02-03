@@ -11,6 +11,9 @@ pub enum ApiError {
     Jwt(jsonwebtoken::errors::Error),
     MissingCredentials,
     WrongCredentials,
+    InvalidAccessToken,
+    InvalidRefreshToken,
+    MissingRefreshToken,
 }
 
 impl IntoResponse for ApiError {
@@ -39,6 +42,13 @@ impl IntoResponse for ApiError {
                 StatusCode::BAD_REQUEST,
                 "Wrong credentials or user disabled",
             ),
+            ApiError::InvalidAccessToken => {
+                (StatusCode::UNAUTHORIZED, "Invalid bearer token provided")
+            }
+            ApiError::InvalidRefreshToken => {
+                (StatusCode::BAD_REQUEST, "Refresh token is not valid")
+            }
+            ApiError::MissingRefreshToken => (StatusCode::BAD_REQUEST, "Refresh token is missing"),
         };
 
         let body = Json(json!({

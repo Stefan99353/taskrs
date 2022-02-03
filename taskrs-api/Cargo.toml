@@ -24,7 +24,7 @@ tracing-subscriber = { version = "0.3.6", features = ["env-filter", "registry", 
 
 [dependencies.axum]
 version = "0.4.4"
-features = ["http2", "ws"]
+features = ["http2", "ws", "headers"]
 
 [dependencies.taskrs-db]
 path = "../taskrs-db"

@@ -7,7 +7,7 @@ use axum::extract::Extension;
 use axum::response::IntoResponse;
 use axum::Json;
 use std::sync::Arc;
-use taskrs_db::sea_orm::DbConn;
+use taskrs_db::sea_orm::{ColumnTrait, Condition, DbConn};
 use time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
@@ -38,7 +38,31 @@ pub async fn login(
     }))
 }
 
-pub async fn logout() -> impl IntoResponse {}
+pub async fn logout(
+    Extension(db): Extension<Arc<DbConn>>,
+    cookies: Cookies,
+) -> Result<(), ApiError> {
+    let token = cookies
+        .get(REFRESH_COOKIE_NAME)
+        .ok_or(ApiError::MissingRefreshToken)?;
+
+    // TODO: Check if token belongs to requester
+
+    let count = taskrs_db::actions::refresh_tokens::delete(
+        None,
+        Some(
+            Condition::all().add(taskrs_db::models::refresh_token::Column::Token.eq(token.value())),
+        ),
+        db.as_ref(),
+    )
+    .await
+    .map_err(ApiError::Database)?;
+    if count > 0 {
+        Ok(())
+    } else {
+        Err(ApiError::InvalidRefreshToken)
+    }
+}
 
 pub async fn refresh() -> impl IntoResponse {}
 
