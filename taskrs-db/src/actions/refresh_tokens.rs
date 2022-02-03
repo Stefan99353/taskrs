@@ -134,7 +134,7 @@ where
     C: ConnectionTrait<'a>,
 {
     let active_model: refresh_token::ActiveModel = refresh_token.into();
-    debug!("Inserting new permission");
+    debug!("Inserting new refresh_token");
     active_model.insert(db).await.map(|model| model.into())
 }
 

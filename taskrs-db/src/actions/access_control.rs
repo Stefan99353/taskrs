@@ -30,7 +30,7 @@ where
     debug!("Get current permissions of user");
     let old_permission_ids: HashSet<i32> = user_permission::Entity::find()
         .select_only()
-        .column(user_permission::Column::PermissionId)
+        .column_as(user_permission::Column::PermissionId, QueryId::Id)
         .filter(user_permission::Column::UserId.eq(user_id))
         .into_values::<_, QueryId>()
         .all(db)
@@ -164,7 +164,7 @@ where
     debug!("Get current permissions of role");
     let old_permission_ids: HashSet<i32> = role_permission::Entity::find()
         .select_only()
-        .column(role_permission::Column::PermissionId)
+        .column_as(role_permission::Column::PermissionId, QueryId::Id)
         .filter(role_permission::Column::RoleId.eq(role_id))
         .into_values::<_, QueryId>()
         .all(db)
@@ -294,7 +294,7 @@ where
     debug!("Get current roles of user");
     let old_role_ids: HashSet<i32> = user_role::Entity::find()
         .select_only()
-        .column(user_role::Column::RoleId)
+        .column_as(user_role::Column::RoleId, QueryId::Id)
         .filter(user_role::Column::UserId.eq(user_id))
         .into_values::<_, QueryId>()
         .all(db)

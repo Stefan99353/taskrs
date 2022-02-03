@@ -1,0 +1,15 @@
+database:
+  url: "sqlite:./taskrs.db?mode=rwc"
+  min_connections: 5
+  max_connections: 100
+  connect_timeout: 10
+  idle_timeout: 10
+server:
+  bind_address: "0.0.0.0"
+  bind_port: 8080
+logs:
+  log_to_file: false
+  log_to_stdout: true
+  log_dir: "logs"
+  log_prefix: "taskrs.log"
+  rust_log: "info"
