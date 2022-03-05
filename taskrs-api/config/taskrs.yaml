@@ -1,0 +1,20 @@
+authentication:
+  access_token_secret: "pJ7rMj7C9ZVl7b0gUMnQUfT+uJPnOCuc7H41fM196q6cvK2VGpJSTl20yFfSQOH0ugl7dwT5RiVLnrIPaoxQ6Q=="
+  refresh_token_secret: "ebSdnOYZ5EAvMOjgsTlnbNqAQaL7sXnvTld/GgweDjH3hL+RH1HFRspTLOzOHjwFI6QRkEgUFgtQRR0QeIwEVlW5gKyRYzFyT7GFSmFz/4z1SxwtsbR4ZqioivZwRBLGdGjPFs/S9YbLS2oOSwXTMpC8ueaiC+JkxoedMGcUjQQ="
+  access_token_expiration_time: 5
+  refresh_token_expiration_time: 15552000
+database:
+  url: "sqlite:./taskrs.db?mode=rwc"
+  min_connections: 5
+  max_connections: 100
+  connect_timeout: 10
+  idle_timeout: 10
+server:
+  bind_address: "0.0.0.0"
+  bind_port: 8080
+logs:
+  log_to_file: true
+  log_to_stdout: true
+  log_dir: "logs"
+  log_prefix: "taskrs.log"
+  rust_log: "info"

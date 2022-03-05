@@ -1,59 +1,77 @@
-use axum::http::StatusCode;
+use crate::api::auth::error::AuthError;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use hyper::StatusCode;
 use serde_json::json;
+use taskrs_core::error::Error;
 use taskrs_db::sea_orm::DbErr;
 
-#[derive(Debug)]
 pub enum ApiError {
+    Auth(AuthError),
+
+    // External Errors
+    Argon(Box<dyn std::error::Error>),
     Database(DbErr),
-    Argon(taskrs_db::argon2::Error),
-    Jwt(jsonwebtoken::errors::Error),
-    MissingCredentials,
-    WrongCredentials,
-    InvalidAccessToken,
-    InvalidRefreshToken,
-    MissingRefreshToken,
+    JsonWebToken(Box<dyn std::error::Error>),
+}
+
+impl From<AuthError> for ApiError {
+    fn from(err: AuthError) -> Self {
+        Self::Auth(err)
+    }
+}
+
+impl From<taskrs_core::error::Error> for ApiError {
+    fn from(err: taskrs_core::error::Error) -> Self {
+        match err {
+            Error::Argon(e) => Self::Argon(Box::new(e)),
+            Error::Auth(_) => Self::Auth(AuthError::Credentials),
+            Error::Database(e) => Self::Database(e),
+            Error::JsonWebToken(e) => Self::JsonWebToken(Box::new(e)),
+        }
+    }
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let (status, error_message) = match self {
-            ApiError::Database(e) => {
-                error!("{}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Database error")
-            }
-            ApiError::Argon(e) => {
-                error!("{}", e);
-                (
+        match self {
+            ApiError::Auth(e) => e.into_response(),
+            ApiError::Argon(e) => match cfg!(debug_assertions) {
+                true => (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    "Password hashing/verifying error",
+                    Json(json!({ "error": format!("Argon error: {}", e) })),
                 )
-            }
-            ApiError::Jwt(e) => {
-                error!("{}", e);
-                (
+                    .into_response(),
+                false => (
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    "Error while creating/decoding JWTs",
+                    Json(json!({"error": "Internal Server Error"})),
                 )
-            }
-            ApiError::MissingCredentials => (StatusCode::BAD_REQUEST, "Missing credentials"),
-            ApiError::WrongCredentials => (
-                StatusCode::BAD_REQUEST,
-                "Wrong credentials or user disabled",
-            ),
-            ApiError::InvalidAccessToken => {
-                (StatusCode::UNAUTHORIZED, "Invalid bearer token provided")
-            }
-            ApiError::InvalidRefreshToken => {
-                (StatusCode::BAD_REQUEST, "Refresh token is not valid")
-            }
-            ApiError::MissingRefreshToken => (StatusCode::BAD_REQUEST, "Refresh token is missing"),
-        };
-
-        let body = Json(json!({
-            "error": error_message,
-        }));
-        (status, body).into_response()
+                    .into_response(),
+            },
+            ApiError::Database(e) => match cfg!(debug_assertions) {
+                true => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": format!("Database error: {}", e) })),
+                )
+                    .into_response(),
+                false => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": "Internal Server Error"})),
+                )
+                    .into_response(),
+            },
+            ApiError::JsonWebToken(e) => match cfg!(debug_assertions) {
+                true => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": format!("JsonWebToken error: {}", e) })),
+                )
+                    .into_response(),
+                false => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": "Internal Server Error"})),
+                )
+                    .into_response(),
+            },
+        }
     }
 }

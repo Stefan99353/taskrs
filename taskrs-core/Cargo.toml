@@ -1,0 +1,28 @@
+[package]
+name = "taskrs-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.55"
+async-trait = "0.1.52"
+build_const = "0.2.2"
+chrono = { version = "0.4.19", features = ["serde"] }
+futures = "0.3.19"
+jsonwebtoken = "7.2.0"
+rand = "0.8.4"
+rust-argon2 = "1.0.0"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_json = "1.0.78"
+tracing = "0.1.29"
+
+[dependencies.taskrs-db]
+path = "../taskrs-db"
+features = ["sqlite", "mysql", "posgres", "db-timestamps"]
+default-features = false
+
+[build-dependencies]
+build_const = "0.2.2"
+serde = { version = "1.0.135", features = ["derive"] }
+glob = "0.3.0"
+serde_json = "1.0.78"

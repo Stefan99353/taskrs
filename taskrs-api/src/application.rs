@@ -1,7 +1,4 @@
 use crate::config::{Config, DatabaseConfig};
-use crate::seeding::{
-    seed_permissions, seed_root_role, seed_root_role_permissions, seed_root_user,
-};
 use axum::routing::IntoMakeService;
 use axum::{Router, Server};
 use http_body::combinators::UnsyncBoxBody;
@@ -15,10 +12,13 @@ use std::net::SocketAddr;
 use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
+use taskrs_core::seeding::{
+    seed_permissions, seed_root_role, seed_root_role_permissions, seed_root_user,
+};
 use taskrs_db::connection::ConnectionBuilder;
 use taskrs_db::sea_orm::DbConn;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::any;
+use tower_http::cors::Any;
 use tower_http::trace::DefaultOnResponse;
 use tower_http::{add_extension, compression, cors, sensitive_headers, set_header, trace};
 use tracing::Level;
@@ -84,9 +84,9 @@ fn build_server(
         // CORS
         .layer(
             cors::CorsLayer::new()
-                .allow_origin(any())
-                .allow_methods(any())
-                .allow_headers(any()),
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
         )
         // If the response has a known size set the `Content-Length` header
         .layer(set_header::SetResponseHeaderLayer::overriding(
@@ -134,11 +134,25 @@ async fn setup_database(config: &Config, db: &DbConn) {
     });
 
     // Seeding permissions
-    seed_permissions(db).await;
+    seed_permissions(db).await.unwrap_or_else(|err| {
+        error!("Error while seeding permissions.");
+        error!("{}", err);
+        exit(-1);
+    });
 
     // Seed root role and its permissions
-    let role = seed_root_role(db).await;
-    seed_root_role_permissions(role.id, db).await;
+    let role = seed_root_role(db).await.unwrap_or_else(|err| {
+        error!("Error while seeding root role.");
+        error!("{}", err);
+        exit(-1);
+    });
+    seed_root_role_permissions(role.id, db)
+        .await
+        .unwrap_or_else(|err| {
+            error!("Error while seeding root role permissions.");
+            error!("{}", err);
+            exit(-1);
+        });
 
     // Seed root user
     if config.seeding.seed_root_user {
@@ -149,11 +163,16 @@ async fn setup_database(config: &Config, db: &DbConn) {
             config.seeding.root_user_last_name.clone(),
             db,
         )
-        .await;
+        .await
+        .unwrap_or_else(|err| {
+            error!("Error while seeding root user.");
+            error!("{}", err);
+            exit(-1);
+        });
 
         // Grant root role
         if config.seeding.grant_root_role {
-            taskrs_db::actions::access_control::add_user_roles(root_user.id, vec![role.id], db)
+            taskrs_core::models::user::User::grant_roles(root_user.id, vec![role.id], db)
                 .await
                 .unwrap_or_else(|err| {
                     error!("Database error while granting root role: {}", err);

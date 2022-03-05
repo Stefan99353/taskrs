@@ -1,3 +1,8 @@
+authentication:
+  access_token_secret: "secret"
+  refresh_token_secret: "secret"
+  access_token_expiration_time: 600
+  refresh_token_expiration_time: 15552000
 database:
   url: "sqlite:./taskrs.db?mode=rwc"
   min_connections: 5

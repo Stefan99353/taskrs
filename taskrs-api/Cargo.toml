@@ -6,12 +6,10 @@ edition = "2021"
 [dependencies]
 chrono = { version = "0.4.19", features = ["serde"] }
 config = { version = "0.11.0", features = ["toml", "json", "hjson", "yaml", "ini"] }
-build_const = "0.2.2"
 dotenv = "0.15.0"
 futures = "0.3.19"
 http-body = "0.4.4"
 hyper = "0.14.16"
-jsonwebtoken = "7.2.0"
 serde = { version = "1.0.135", features = ["derive"] }
 serde_json = "1.0.78"
 time = "0.2.27"
@@ -26,13 +24,10 @@ tracing-subscriber = { version = "0.3.6", features = ["env-filter", "registry", 
 version = "0.4.4"
 features = ["http2", "ws", "headers"]
 
+[dependencies.taskrs-core]
+path = "../taskrs-core"
+
 [dependencies.taskrs-db]
 path = "../taskrs-db"
-features = ["sqlite", "mysql", "posgres", "runtime-tokio-rustls", "db-timestamps", "debug-sql"]
+features = ["sqlite", "mysql", "posgres", "runtime-tokio-rustls", "db-timestamps"]
 default-features = false
-
-[build-dependencies]
-build_const = "0.2.2"
-serde = { version = "1.0.135", features = ["derive"] }
-glob = "0.3.0"
-serde_json = "1.0.78"

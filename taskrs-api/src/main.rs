@@ -4,10 +4,7 @@ extern crate tracing;
 mod api;
 mod application;
 mod config;
-pub mod dtos;
 mod logging;
-mod permissions;
-mod seeding;
 
 #[tokio::main]
 async fn main() {

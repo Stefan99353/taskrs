@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "taskrs-api",
+    "taskrs-core",
     "taskrs-db",
 ]

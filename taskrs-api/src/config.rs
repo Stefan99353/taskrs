@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
+use taskrs_core::models::auth::AuthSettings;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -58,6 +59,17 @@ pub struct AuthenticationConfig {
     pub refresh_token_secret: String,
     pub access_token_expiration_time: u32,  // Seconds
     pub refresh_token_expiration_time: u32, // Seconds
+}
+
+impl AuthenticationConfig {
+    pub fn into_settings(self) -> AuthSettings {
+        AuthSettings {
+            access_token_secret: self.access_token_secret,
+            refresh_token_secret: self.refresh_token_secret,
+            access_token_expiration_time: self.access_token_expiration_time,
+            refresh_token_expiration_time: self.refresh_token_expiration_time,
+        }
+    }
 }
 
 impl Default for AuthenticationConfig {
