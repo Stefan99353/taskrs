@@ -15,7 +15,7 @@ serde_json = "1.0.78"
 time = "0.2.27"
 tokio = { version = "1.15.0", features = ["full"] }
 tower-cookies = "0.4.1"
-tower-http = { version = "0.2.1", features = ["add-extension", "compression-full", "cors", "sensitive-headers", "trace", "set-header"] }
+tower-http = { version = "0.2.1", features = ["add-extension", "compression-full", "cors", "fs", "sensitive-headers", "trace", "set-header"] }
 tracing = "0.1.29"
 tracing-appender = "0.2.0"
 tracing-subscriber = { version = "0.3.6", features = ["env-filter", "registry", "json"] }

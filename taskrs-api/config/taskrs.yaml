@@ -12,6 +12,8 @@ database:
 server:
   bind_address: "0.0.0.0"
   bind_port: 8080
+  spa_path: "../static"
+  spa_index: "index.html"
 logs:
   log_to_file: true
   log_to_stdout: true
