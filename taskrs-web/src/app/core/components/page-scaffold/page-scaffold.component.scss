@@ -1,0 +1,26 @@
+.spacer {
+    flex: 1 1 auto;
+}
+
+.dark-mode-toggle {
+    ::ng-deep {
+        .mat-slide-toggle-content {
+            height: 100%;
+        }
+    }
+}
+
+.logout-button {
+    margin-left: 1rem;
+}
+
+.sidenav {
+    width: 24rem;
+}
+
+.main-content {
+    height: calc(100vh - 6rem);
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+}

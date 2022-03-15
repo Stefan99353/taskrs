@@ -2,8 +2,7 @@ import {Component} from '@angular/core';
 
 @Component({
     selector: 'app-root',
-    templateUrl: './app.component.html',
-    styleUrls: ['./app.component.scss']
+    template: '<app-page-scaffold></app-page-scaffold>',
 })
 export class AppComponent {
 }
