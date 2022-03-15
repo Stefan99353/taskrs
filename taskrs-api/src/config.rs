@@ -110,6 +110,8 @@ impl Default for SeedingConfig {
 pub struct ServerConfig {
     pub bind_address: IpAddr,
     pub bind_port: u16,
+    pub spa_path: String,
+    pub spa_index: String,
 }
 
 impl Default for ServerConfig {
@@ -117,6 +119,8 @@ impl Default for ServerConfig {
         Self {
             bind_address: IpAddr::from([0, 0, 0, 0]),
             bind_port: 8080,
+            spa_path: "./static".to_string(),
+            spa_index: "index.html".to_string(),
         }
     }
 }

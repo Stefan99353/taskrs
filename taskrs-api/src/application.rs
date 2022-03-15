@@ -1,14 +1,16 @@
-use crate::config::{Config, DatabaseConfig};
-use axum::routing::IntoMakeService;
-use axum::{Router, Server};
+use crate::config::{Config, DatabaseConfig, ServerConfig};
+use axum::routing::{get_service, IntoMakeService};
+use axum::{Json, Router, Server};
 use http_body::combinators::UnsyncBoxBody;
 use hyper::body::HttpBody as _;
 use hyper::header::{AUTHORIZATION, CONTENT_LENGTH};
 use hyper::http::HeaderValue;
 use hyper::server::conn::AddrIncoming;
-use hyper::Response;
+use hyper::{Response, StatusCode};
+use serde_json::json;
 use std::iter::once;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::process::exit;
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,9 +20,14 @@ use taskrs_core::seeding::{
 use taskrs_db::connection::ConnectionBuilder;
 use taskrs_db::sea_orm::DbConn;
 use tower_cookies::CookieManagerLayer;
-use tower_http::cors::Any;
-use tower_http::trace::DefaultOnResponse;
-use tower_http::{add_extension, compression, cors, sensitive_headers, set_header, trace};
+use tower_http::add_extension::AddExtensionLayer;
+#[cfg(not(debug_assertions))]
+use tower_http::compression::CompressionLayer;
+use tower_http::cors::{Any, CorsLayer};
+use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
+use tower_http::services::{ServeDir, ServeFile};
+use tower_http::set_header::SetResponseHeaderLayer;
+use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::reload::Handle;
 use tracing_subscriber::{EnvFilter, Registry};
@@ -69,38 +76,72 @@ fn build_server(
     state: ApplicationState,
     db: DbConn,
 ) -> Server<AddrIncoming, IntoMakeService<Router>> {
-    let router = crate::api::get_router()
+    let router = build_router(&state.config.server)
         // Mark the `Authorization` request header as sensitive so it doesn't show in logs
-        .layer(sensitive_headers::SetSensitiveHeadersLayer::new(once(
-            AUTHORIZATION,
-        )))
+        .layer(SetSensitiveHeadersLayer::new(once(AUTHORIZATION)))
         // High level logging of requests and responses
-        .layer(
-            trace::TraceLayer::new_for_http()
-                .on_response(DefaultOnResponse::new().level(Level::INFO)),
-        )
-        // Compress responses
-        .layer(compression::CompressionLayer::new())
+        .layer(TraceLayer::new_for_http().on_response(DefaultOnResponse::new().level(Level::INFO)))
         // CORS
         .layer(
-            cors::CorsLayer::new()
+            CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(Any)
                 .allow_headers(Any),
         )
         // If the response has a known size set the `Content-Length` header
-        .layer(set_header::SetResponseHeaderLayer::overriding(
+        .layer(SetResponseHeaderLayer::overriding(
             CONTENT_LENGTH,
             content_length_from_response,
         ))
         // Manager Layer for cookies
         .layer(CookieManagerLayer::new())
         // Wrap application state for extraction
-        .layer(add_extension::AddExtensionLayer::new(state))
+        .layer(AddExtensionLayer::new(state))
         // Wrap database connection for extraction
-        .layer(add_extension::AddExtensionLayer::new(Arc::new(db)));
+        .layer(AddExtensionLayer::new(Arc::new(db)));
+
+    // Compress responses only in release mode
+    #[cfg(not(debug_assertions))]
+    let router = router.layer(CompressionLayer::new());
 
     Server::bind(&address).serve(router.into_make_service())
+}
+
+fn build_router(server_config: &ServerConfig) -> Router {
+    let mut index_path = PathBuf::from(&server_config.spa_path);
+    index_path.push(&server_config.spa_index);
+
+    Router::new()
+        .nest("/api", crate::api::get_api_router())
+        .nest(
+            "/static",
+            get_service(
+                ServeDir::new(&server_config.spa_path)
+                    .precompressed_br()
+                    .precompressed_gzip()
+                    .precompressed_deflate(),
+            )
+            .handle_error(|_: std::io::Error| async move {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": "Internal Server Error"})),
+                )
+            }),
+        )
+        .fallback(
+            get_service(
+                ServeFile::new(&index_path)
+                    .precompressed_br()
+                    .precompressed_gzip()
+                    .precompressed_deflate(),
+            )
+            .handle_error(|_: std::io::Error| async move {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": "Internal Server Error"})),
+                )
+            }),
+        )
 }
 
 async fn get_database_connection(database_config: &DatabaseConfig) -> DbConn {

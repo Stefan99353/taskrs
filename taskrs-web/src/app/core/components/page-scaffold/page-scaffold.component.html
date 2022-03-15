@@ -1,0 +1,38 @@
+<mat-toolbar color="primary">
+    <!-- Menu Button -->
+    <button mat-icon-button
+            (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+    </button>
+
+    <!-- Header -->
+    TaskRS
+
+    <span class="spacer"></span>
+
+    <!-- Theme Toggle -->
+    <mat-slide-toggle class="dark-mode-toggle" [formControl]="toggleDarkTheme">
+        <mat-icon *ngIf="toggleDarkTheme.value">dark_mode</mat-icon>
+        <mat-icon *ngIf="!toggleDarkTheme.value">light_mode</mat-icon>
+    </mat-slide-toggle>
+
+    <!-- Logout -->
+    <button mat-icon-button
+            class="logout-button"
+            (click)="logout()">
+        <mat-icon>logout</mat-icon>
+    </button>
+</mat-toolbar>
+
+<mat-sidenav-container>
+    <mat-sidenav #sidenav
+                 class="sidenav"
+                 mode="over"
+                 [(opened)]="isSidenavOpen">
+        Menu
+    </mat-sidenav>
+
+    <mat-sidenav-content class="main-content">
+        <router-outlet></router-outlet>
+    </mat-sidenav-content>
+</mat-sidenav-container>
